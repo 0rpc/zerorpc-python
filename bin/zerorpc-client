@@ -1,0 +1,194 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Started by François-Xavier Bourlet <fx@dotcloud.com>, Jan 2012.
+
+import argparse
+import json
+import sys
+import inspect
+from pprint import pprint
+
+import zerorpc
+
+
+parser = argparse.ArgumentParser(
+        description='Make a zerorpc call to a remote service.'
+        )
+
+client_or_server = parser.add_mutually_exclusive_group()
+client_or_server.add_argument('--client', action='store_true', default=True,
+        help='remote procedure call mode (default)')
+client_or_server.add_argument('--server', action='store_false', dest='client',
+        help='turn a given python module into a server')
+
+parser.add_argument('--connect', action='append', metavar='address',
+                    help='specify address to connect to. Can be specified \
+                    multiple times and in conjunction with --bind')
+parser.add_argument('--bind', action='append', metavar='address',
+                    help='specify address to listen to. Can be specified \
+                    multiple times and in conjunction with --connect')
+parser.add_argument('--timeout', default=30, metavar='seconds', type=int,
+                    help='abort request after X seconds. \
+                    (default: 30s, --client only)')
+parser.add_argument('--heartbeat', default=5, metavar='seconds', type=int,
+                    help='heartbeat frequency. You should always use \
+                    the same frequency as the server. (default: 5s)')
+parser.add_argument('-j', '--json', default=False, action='store_true',
+                    help='arguments are in JSON format and will be be parsed \
+                    before being sent to the remote')
+parser.add_argument('-pj', '--print-json', default=False, action='store_true',
+                    help='print result in JSON format.')
+parser.add_argument('-?', '--inspect', default=False, action='store_true',
+                    help='retrieve detailed informations for the given \
+                    remote (cf: command) method. If not method, display \
+                    a list of remote methods signature. (only for --client).')
+parser.add_argument('--active-hb', default=False, action='store_true',
+                    help='enable active heartbeat. The default is to \
+                    wait for the server to send the first heartbeat')
+parser.add_argument('address', nargs='?', help='address to connect to. Skip \
+                    this if you specified --connect or --bind at least once')
+parser.add_argument('command', nargs='?',
+                    help='remote procedure to call if --client (default) or \
+                    python module/class to load if --server. If no command is \
+                    specified, a list of remote methods are displayed.')
+parser.add_argument('params', nargs='*',
+                    help='parameters for the remote call if --client (default)')
+
+
+def setup_links(args, socket):
+    if args.bind:
+        for endpoint in args.bind:
+            print 'binding to "{0}"'.format(endpoint)
+            socket.bind(endpoint)
+    addresses = []
+    if args.address:
+        addresses.append(args.address)
+    if args.connect:
+        addresses.extend(args.connect)
+    for endpoint in addresses:
+        print 'connecting to "{0}"'.format(endpoint)
+        socket.connect(endpoint)
+
+def run_server(args):
+    server_obj_path = args.command
+
+    if '.' in server_obj_path:
+        modulepath, objname = server_obj_path.rsplit('.', 1)
+        module = __import__(modulepath, fromlist=[objname])
+        server_obj = getattr(module, objname)
+    else:
+        server_obj = __import__(server_obj_path)
+
+    if callable(server_obj):
+        server_obj = server_obj()
+
+    server = zerorpc.Server(server_obj, heartbeat=args.heartbeat)
+    setup_links(args, server)
+    print 'serving "{0}"'.format(server_obj_path)
+    return server.run()
+
+# this function does a really intricate job to keep backward compatibility
+# with a previous version of zerorpc, and lazily retrieving results if possible...
+def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
+    try:
+        remote_detailled_methods = client._zerorpc_inspect(method,
+                long_doc)['methods']
+
+        if include_argspec:
+            r = [(name + (inspect.formatargspec(*argspec) if argspec else
+                '(...)'), doc if doc else '<undocumented>') for name, argspec, doc
+                in remote_detailled_methods]
+        else:
+            r = [(name, doc if doc else '<undocumented>')
+                    for name, argspec, doc in remote_detailled_methods]
+
+        longest_name_len = max(len(name) for name, doc in r)
+        return (longest_name_len, r)
+    except zerorpc.RemoteError:
+        pass
+
+    if method is None:
+        remote_methods = client._zerorpc_list()
+    else:
+        remote_methods = [method]
+
+    def remote_detailled_methods():
+        for name in remote_methods:
+            if include_argspec:
+                argspec = client._zerorpc_args(name)
+            else:
+                argspec = None
+            docstring = client._zerorpc_help(name)
+            if docstring and not long_doc:
+                docstring = docstring.split('\n', 1)[0]
+            yield (name, argspec, docstring if docstring else '<undocumented>')
+
+    if not include_argspec:
+        longest_name_len = max(len(name) for name in remote_methods)
+        return (longest_name_len, ((name, doc) for name, argspec, doc in
+            remote_detailled_methods()))
+
+    r = [(name + (inspect.formatargspec(*argspec) if argspec else '(...)'), doc)
+            for name, argspec, doc in remote_detailled_methods()]
+    longest_name_len = max(len(name) for name, doc in r)
+    return (longest_name_len, r)
+
+def run_client(args):
+    client = zerorpc.Client(timeout=args.timeout, heartbeat=args.heartbeat,
+            passive_heartbeat=not args.active_hb)
+    setup_links(args, client)
+    if not args.command:
+        (longest_name_len, detailled_methods) = zerorpc_inspect(client,
+                long_doc=False, include_argspec=args.inspect)
+        if args.inspect:
+            for (name, doc) in detailled_methods:
+                print name
+        else:
+            for (name, doc) in detailled_methods:
+                print '{0} {1}'.format(name.ljust(longest_name_len), doc)
+        return
+    if args.inspect:
+        (longest_name_len, detailled_methods) = zerorpc_inspect(client,
+                method=args.command)
+        (name, doc) = detailled_methods[0]
+        print '\n{0}\n\n{1}\n'.format(name, doc)
+        return
+    if args.json:
+        call_args = [json.loads(x) for x in args.params]
+    else:
+        call_args = args.params
+    results = client(args.command, *call_args)
+    if getattr(results, 'next', None) is None:
+        if args.print_json:
+            json.dump(results, sys.stdout)
+        else:
+            pprint(results)
+    else:
+        # streaming responses
+        if args.print_json:
+            first = True
+            sys.stdout.write('[')
+            for result in results:
+                if first:
+                    first = False
+                else:
+                    sys.stdout.write(',')
+                json.dump(result, sys.stdout)
+            sys.stdout.write(']')
+        else:
+            for result in results:
+                pprint(result)
+
+def main():
+    args = parser.parse_args()
+    if args.bind or args.connect:
+        if args.command:
+            args.arguments.prepend(args.command)
+        args.command = args.address
+        args.address = None
+    if args.client:
+        return run_client(args)
+    return run_server(args)
+
+if __name__ == '__main__':
+    exit(main())
