@@ -20,7 +20,12 @@ class LostRemote(Exception):
     pass
 
 class TimeoutExpired(Exception):
-    pass
+
+    def __init__(self, timeout_s, when=None):
+        msg = 'timeout after {0}s'
+        if when:
+            msg = '{0}, when {1}'.format(msg, when)
+        super(TimeoutExpired, self).__init__(msg)
 
 class RemoteError(Exception):
 
@@ -810,8 +815,9 @@ class Client(SocketBase):
         try:
             try:
                 event = socket.recv(timeout)
-            except gevent.queue.Empty:
-                raise TimeoutExpired(method, timeout)
+            except TimeoutExpired:
+                raise TimeoutExpired(timeout,
+                        'calling remote method {0}'.format(method))
 
             pattern = self._select_pattern(event)
             return pattern.process_answer(socket, event, method, timeout,
