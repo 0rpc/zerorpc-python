@@ -1,4 +1,0 @@
-pyzmq-static==2.1.7
-argparse
-msgpack-python
-gevent
