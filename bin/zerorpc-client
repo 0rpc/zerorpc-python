@@ -188,7 +188,7 @@ def main():
     args = parser.parse_args()
     if args.bind or args.connect:
         if args.command:
-            args.arguments.prepend(args.command)
+            args.params.insert(0, args.command)
         args.command = args.address
         args.address = None
     if args.client:
