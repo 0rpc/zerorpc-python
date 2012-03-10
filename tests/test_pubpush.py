@@ -23,12 +23,11 @@
 # SOFTWARE.
 
 
-from nose.tools import assert_raises
 import gevent
 import gevent.event
 
-from zerorpc import zmq
 import zerorpc
+
 
 def test_pushpull():
     endpoint = 'ipc://test_pushpull'
@@ -51,6 +50,7 @@ def test_pushpull():
     pusher.lolita(1, 2)
     trigger.wait()
     print 'done'
+
 
 def test_pubsub():
     endpoint = 'ipc://test_pubsub'

@@ -30,6 +30,7 @@ import gevent.event
 
 from zerorpc import zmq
 
+
 def test1():
     def server():
         c = zmq.Context()
@@ -44,7 +45,6 @@ def test1():
 
         s.close()
         c.term()
-
 
     def client():
         c = zmq.Context()

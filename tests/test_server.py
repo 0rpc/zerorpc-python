@@ -29,6 +29,7 @@ import gevent
 from zerorpc import zmq
 import zerorpc
 
+
 def test_server_manual():
     endpoint = 'ipc://test_server_manual'
 
@@ -60,6 +61,7 @@ def test_server_manual():
     assert event.args == (3,)
     client_channel.close()
     srv.stop()
+
 
 def test_client_server():
     endpoint = 'ipc://test_client_server'
@@ -110,6 +112,7 @@ def test_client_server_client_timeout():
     client.close()
     srv.close()
 
+
 def test_client_server_exception():
     endpoint = 'ipc://test_client_server_exception'
 
@@ -130,6 +133,7 @@ def test_client_server_exception():
     assert client.raise_something(range(5)) == 4
     client.close()
     srv.close()
+
 
 def test_client_server_detailed_exception():
     endpoint = 'ipc://test_client_server_detailed_exception'
@@ -159,6 +163,7 @@ def test_client_server_detailed_exception():
 
     client.close()
     srv.close()
+
 
 def test_exception_compat_v1():
     endpoint = 'ipc://test_exception_compat_v1'

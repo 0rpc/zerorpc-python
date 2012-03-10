@@ -23,12 +23,11 @@
 # SOFTWARE.
 
 
-from nose.tools import assert_raises
-import gevent
 import random
 
 from zerorpc import zmq
 import zerorpc
+
 
 def test_sub_events():
     endpoint = 'ipc://test_sub_events'
@@ -61,6 +60,7 @@ def test_sub_events():
     server_events.close()
     client_events.close()
 
+
 def test_multiple_sub_events():
     endpoint = 'ipc://test_multiple_sub_events'
     server_events = zerorpc.Events(zmq.XREP)
@@ -92,7 +92,6 @@ def test_multiple_sub_events():
     assert event.name == 'coucou1'
     assert event.args == 43
 
-
     event = server.recv()
     print event
     assert type(event.args) is str
@@ -114,6 +113,7 @@ def test_multiple_sub_events():
     server_events.close()
     client_events.close()
 
+
 def test_recursive_multiplexer():
     endpoint = 'ipc://test_recursive_multiplexer'
 
@@ -123,7 +123,8 @@ def test_recursive_multiplexer():
 
     client_events = zerorpc.Events(zmq.XREQ)
     client_events.connect(endpoint)
-    clientmux = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
+    clientmux = zerorpc.ChannelMultiplexer(client_events,
+        ignore_broadcast=True)
 
     def ping_pong(climux, srvmux):
         cli_chan = climux.channel()
@@ -146,7 +147,8 @@ def test_recursive_multiplexer():
         srv_chan.close()
         cli_chan.close()
 
-    def create_sub_multiplexer(events, from_event=None, ignore_broadcast=False):
+    def create_sub_multiplexer(events, from_event=None,
+            ignore_broadcast=False):
         channel = events.channel(from_event)
         sub_events = zerorpc.WrappedEvents(channel)
         sub_multiplexer = zerorpc.ChannelMultiplexer(sub_events,
