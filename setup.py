@@ -22,14 +22,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import zerorpc
 
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 
 setup(
     name         = 'zerorpc',
-    version      = '0.1.0',
-    author       = 'dotCloud inc. <team@dotcloud.com>',
-    package_dir  = {'zerorpc': '.'},
+    version      = zerorpc.__version__,
+    description  = 'zerorpc is a flexible RPC based on zeromq.',
+    author       = zerorpc.__author__,
+    url          = 'https://github.com/dotcloud/zerorpc-python',
     packages     = ['zerorpc'],
     install_requires = [
             'argparse',
@@ -40,5 +46,13 @@ setup(
     zip_safe     = False,
     scripts      = [
             'bin/zerorpc-client'
-        ]
-    )
+        ],
+    license      = 'MIT',
+    classifiers=(
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Natural Language :: English',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+    ),
+)
