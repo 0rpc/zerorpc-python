@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 
-from nose.tools import assert_raises
 import gevent
 
-from zerorpc import zmq
 import zerorpc
+
 
 def test_client_server_hearbeat():
     endpoint = 'ipc://test_client_server_hearbeat'

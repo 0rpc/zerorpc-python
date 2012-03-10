@@ -51,7 +51,8 @@ parser.add_argument('command', nargs='?',
                     python module/class to load if --server. If no command is \
                     specified, a list of remote methods are displayed.')
 parser.add_argument('params', nargs='*',
-                    help='parameters for the remote call if --client (default)')
+                    help='parameters for the remote call if --client \
+                    (default)')
 
 
 def setup_links(args, socket):
@@ -67,6 +68,7 @@ def setup_links(args, socket):
     for endpoint in addresses:
         print 'connecting to "{0}"'.format(endpoint)
         socket.connect(endpoint)
+
 
 def run_server(args):
     server_obj_path = args.command
@@ -86,8 +88,9 @@ def run_server(args):
     print 'serving "{0}"'.format(server_obj_path)
     return server.run()
 
+
 # this function does a really intricate job to keep backward compatibility
-# with a previous version of zerorpc, and lazily retrieving results if possible...
+# with a previous version of zerorpc, and lazily retrieving results if possible
 def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
     try:
         remote_detailled_methods = client._zerorpc_inspect(method,
@@ -95,8 +98,8 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
 
         if include_argspec:
             r = [(name + (inspect.formatargspec(*argspec) if argspec else
-                '(...)'), doc if doc else '<undocumented>') for name, argspec, doc
-                in remote_detailled_methods]
+                '(...)'), doc if doc else '<undocumented>')
+                for name, argspec, doc in remote_detailled_methods]
         else:
             r = [(name, doc if doc else '<undocumented>')
                     for name, argspec, doc in remote_detailled_methods]
@@ -127,10 +130,12 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
         return (longest_name_len, ((name, doc) for name, argspec, doc in
             remote_detailled_methods()))
 
-    r = [(name + (inspect.formatargspec(*argspec) if argspec else '(...)'), doc)
+    r = [(name + (inspect.formatargspec(*argspec)
+            if argspec else '(...)'), doc)
             for name, argspec, doc in remote_detailled_methods()]
     longest_name_len = max(len(name) for name, doc in r)
     return (longest_name_len, r)
+
 
 def run_client(args):
     client = zerorpc.Client(timeout=args.timeout, heartbeat=args.heartbeat,
@@ -177,6 +182,7 @@ def run_client(args):
         else:
             for result in results:
                 pprint(result)
+
 
 def main():
     args = parser.parse_args()

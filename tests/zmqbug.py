@@ -8,6 +8,7 @@ import gevent.core
 
 STOP_EVERYTHING = False
 
+
 class ZMQSocket(zmq.Socket):
 
     def __init__(self, context, socket_type):
@@ -17,8 +18,8 @@ class ZMQSocket(zmq.Socket):
         self._writable = gevent.event.Event()
         try:
             # gevent>=1.0
-            self._state_event = gevent.hub.get_hub().loop.io(on_state_changed_fd,
-                    gevent.core.READ)
+            self._state_event = gevent.hub.get_hub().loop.io(
+                on_state_changed_fd, gevent.core.READ)
             self._state_event.start(self._on_state_changed)
         except AttributeError:
             # gevent<1.0
@@ -44,7 +45,7 @@ class ZMQSocket(zmq.Socket):
                 self._state_event.stop()
             except AttributeError:
                 # gevent<1.0
-                 self._state_event.cancel()
+                self._state_event.cancel()
         super(ZMQSocket, self).close()
 
     def send(self, data, flags=0, copy=True, track=False):
@@ -81,6 +82,7 @@ class ZMQSocket(zmq.Socket):
 
 zmq_context = zmq.Context()
 
+
 def server():
     socket = ZMQSocket(zmq_context, zmq.REP)
     socket.bind('ipc://zmqbug')
@@ -101,6 +103,7 @@ def server():
     while not STOP_EVERYTHING:
         print "cnt.responded=", cnt.responded
         gevent.sleep(0.5)
+
 
 def client():
     socket = ZMQSocket(zmq_context, zmq.XREQ)

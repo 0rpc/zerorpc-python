@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Based on https://github.com/traviscline/gevent-zeromq/blob/master/gevent_zeromq/core.py
+# Based on https://github.com/traviscline/gevent-zeromq/
 
 
 # We want to act like zmq
@@ -10,6 +10,7 @@ import zmq as _zmq
 
 import gevent.event
 import gevent.core
+
 
 class Context(_zmq.Context):
 
@@ -28,8 +29,8 @@ class Socket(_zmq.Socket):
         self._writable = gevent.event.Event()
         try:
             # gevent>=1.0
-            self._state_event = gevent.hub.get_hub().loop.io(on_state_changed_fd,
-                    gevent.core.READ)
+            self._state_event = gevent.hub.get_hub().loop.io(
+                on_state_changed_fd, gevent.core.READ)
             self._state_event.start(self._on_state_changed)
         except AttributeError:
             # gevent<1.0
@@ -55,7 +56,7 @@ class Socket(_zmq.Socket):
                 self._state_event.stop()
             except AttributeError:
                 # gevent<1.0
-                 self._state_event.cancel()
+                self._state_event.cancel()
         super(Socket, self).close()
 
     def send(self, data, flags=0, copy=True, track=False):
@@ -85,5 +86,6 @@ class Socket(_zmq.Socket):
             while not self._readable.wait(timeout=0.5):
                 events = self.getsockopt(_zmq.EVENTS)
                 if bool(events & _zmq.POLLIN):
-                    print "/!\\ gevent_zeromq BUG /!\\ catching after missing event /!\\"
+                    print "/!\\ gevent_zeromq BUG /!\\ " \
+                        "catching after missing event /!\\"
                     break

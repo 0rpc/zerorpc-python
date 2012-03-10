@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 
-from nose.tools import assert_raises
 import gevent
 
-from zerorpc import zmq
 import zerorpc
+
 
 def test_rcp_streaming():
     endpoint = 'ipc://test_rcp_streaming'

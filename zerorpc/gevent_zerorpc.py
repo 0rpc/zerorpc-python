@@ -19,6 +19,7 @@ import gevent_zmq as zmq
 class LostRemote(Exception):
     pass
 
+
 class TimeoutExpired(Exception):
 
     def __init__(self, timeout_s, when=None):
@@ -26,6 +27,7 @@ class TimeoutExpired(Exception):
         if when:
             msg = '{0}, when {1}'.format(msg, when)
         super(TimeoutExpired, self).__init__(msg)
+
 
 class RemoteError(Exception):
 
@@ -309,7 +311,8 @@ class ChannelMultiplexer(object):
         self._broadcast_queue = None
         if events.recv_is_available and not ignore_broadcast:
             self._broadcast_queue = gevent.queue.Queue(maxsize=1)
-            self._channel_dispatcher_task = gevent.spawn(self._channel_dispatcher)
+            self._channel_dispatcher_task = gevent.spawn(
+                self._channel_dispatcher)
 
     @property
     def recv_is_available(self):
@@ -361,7 +364,8 @@ class ChannelMultiplexer(object):
 
     def channel(self, from_event=None):
         if self._channel_dispatcher_task is None:
-            self._channel_dispatcher_task = gevent.spawn(self._channel_dispatcher)
+            self._channel_dispatcher_task = gevent.spawn(
+                self._channel_dispatcher)
         return Channel(self, from_event)
 
     @property
@@ -700,16 +704,16 @@ class Server(SocketBase):
 
     def _zerorpc_inspect(self, method=None, long_doc=True):
         if method:
-            methods = { method: self._methods[method] }
+            methods = {method: self._methods[method]}
         else:
             methods = dict((m, f) for m, f in self._methods.items()
                     if not m.startswith('_'))
-        detailled_methods = [ (m, f._zerorpc_args(),
+        detailled_methods = [(m, f._zerorpc_args(),
             f.__doc__ if long_doc else
             f.__doc__.split('\n', 1)[0] if f.__doc__ else None)
-                for (m, f) in methods.items() ]
-        return { 'name': self._name,
-                'methods': detailled_methods }
+                for (m, f) in methods.items()]
+        return {'name': self._name,
+                'methods': detailled_methods}
 
     def _inject_builtins(self):
         self._methods['_zerorpc_list'] = lambda: [m for m in self._methods
@@ -717,7 +721,8 @@ class Server(SocketBase):
         self._methods['_zerorpc_name'] = lambda: self._name
         self._methods['_zerorpc_ping'] = lambda: ['pong', self._name]
         self._methods['_zerorpc_help'] = lambda m: self._methods[m].__doc__
-        self._methods['_zerorpc_args'] = lambda m: self._methods[m]._zerorpc_args()
+        self._methods['_zerorpc_args'] = \
+            lambda m: self._methods[m]._zerorpc_args()
         self._methods['_zerorpc_inspect'] = self._zerorpc_inspect
 
     def __call__(self, method, *args):

@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
 
 
-from nose.tools import assert_raises
-import gevent
-
 from zerorpc import zmq
 import zerorpc
 
+
 class MokupContext():
     _next_id = 0
+
     def new_msgid(self):
         new_id = MokupContext._next_id
         MokupContext._next_id += 1
         return new_id
 
+
 def test_context():
     c = zerorpc.Context()
     assert c.new_msgid() is not None
+
 
 def test_event():
     context = MokupContext()
@@ -67,6 +68,7 @@ def test_event():
     event.header.update({'stream': True})
     assert event.header['stream'] is True
 
+
 def test_events_req_rep():
     endpoint = 'ipc://test_events_req_rep'
     server = zerorpc.Events(zmq.REP)
@@ -81,6 +83,7 @@ def test_events_req_rep():
     print event
     assert event.name == 'myevent'
     assert event.args == ('arg1',)
+
 
 def test_events_req_rep2():
     endpoint = 'ipc://test_events_req_rep2'
@@ -102,6 +105,7 @@ def test_events_req_rep2():
         print event
         assert event.name == 'answser' + str(i * 2)
         assert event.args == (i * 2,)
+
 
 def test_events_dealer_router():
     endpoint = 'ipc://test_events_dealer_router'
@@ -125,6 +129,7 @@ def test_events_dealer_router():
         assert event.name == 'answser' + str(i * 2)
         assert event.args == (i * 2,)
 
+
 def test_events_push_pull():
     endpoint = 'ipc://test_events_push_pull'
     server = zerorpc.Events(zmq.PULL)
@@ -141,6 +146,7 @@ def test_events_push_pull():
         print event
         assert event.name == 'myevent'
         assert event.args == (x,)
+
 
 def test_events_channel_client_side():
     endpoint = 'ipc://test_events_channel_client_side'

@@ -25,7 +25,7 @@ def test_close_server_socket():
     event = server.recv()
     server_channel = server.channel(event)
     server_socket = zerorpc.SocketOnChannel(server_channel, heartbeat=1)
-    open_event = server_socket.recv()
+    server_socket.recv()
 
     gevent.sleep(3)
     print 'CLOSE SERVER SOCKET!!!'
@@ -57,7 +57,7 @@ def test_close_client_socket():
     event = server.recv()
     server_channel = server.channel(event)
     server_socket = zerorpc.SocketOnChannel(server_channel, heartbeat=1)
-    open_event = server_socket.recv()
+    server_socket.recv()
 
     gevent.sleep(3)
     print 'CLOSE CLIENT SOCKET!!!'
@@ -130,6 +130,7 @@ def test_heartbeat_can_open_channel_client_close():
     server_socket.close()
     server_channel.close()
     server.close()
+
 
 def test_do_some_req_rep():
     endpoint = 'ipc://test_do_some_req_rep'
@@ -314,8 +315,10 @@ def test_do_some_req_rep_client_timeout():
     client.close()
     server.close()
 
+
 class CongestionError(Exception):
     pass
+
 
 def test_congestion_control_server_pushing():
     endpoint = 'ipc://test_congestion_control_server_pushing'

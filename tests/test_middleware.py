@@ -7,6 +7,7 @@ import gevent
 from zerorpc import zmq
 import zerorpc
 
+
 def test_resolve_endpoint():
     test_endpoint = 'ipc://test_resolve_endpoint'
     c = zerorpc.Context()
@@ -50,6 +51,7 @@ def test_resolve_endpoint():
     print 'resolve toto:', c2.middleware_resolve_endpoint('toto')
     assert c2.middleware_resolve_endpoint('toto') == 'toto'
 
+
 def test_resolve_endpoint_events():
     test_endpoint = 'ipc://test_resolve_endpoint_events'
     c = zerorpc.Context()
@@ -64,8 +66,6 @@ def test_resolve_endpoint_events():
         def hello(self):
             print 'heee'
             return 'world'
-
-
 
     srv = Srv(heartbeat=1, context=c)
     with assert_raises(zmq.ZMQError):
@@ -82,6 +82,7 @@ def test_resolve_endpoint_events():
 
     client.close()
     srv.close()
+
 
 def test_raise_error():
     endpoint = 'ipc://test_raise_error'
