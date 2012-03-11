@@ -70,15 +70,15 @@ class DecoratorBase(object):
 
 class PatternReqRep():
 
-    def process_call(self, socket, event, functor):
-        result = functor(*event.args)
+    def process_call(self, context, socket, event, functor):
+        result = context.middleware_call_procedure(functor, *event.args)
         socket.emit('OK', (result,))
 
     def accept_answer(self, event):
         return True
 
-    def process_answer(self, socket, event, method, timeout,
-        raise_remote_error):
+    def process_answer(self, context, socket, event, method, timeout,
+            raise_remote_error):
         result = event.args[0]
         if event.name == 'ERR':
             raise_remote_error(event)
@@ -93,15 +93,16 @@ class rep(DecoratorBase):
 
 class PatternReqStream():
 
-    def process_call(self, socket, event, functor):
-        for result in iter(functor(*event.args)):
+    def process_call(self, context, socket, event, functor):
+        for result in iter(context.middleware_call_procedure(functor,
+                *event.args)):
             socket.emit('STREAM', result)
         socket.emit('STREAM_DONE', None)
 
     def accept_answer(self, event):
         return event.name in ('STREAM', 'STREAM_DONE')
 
-    def process_answer(self, socket, event, method, timeout,
+    def process_answer(self, context, socket, event, method, timeout,
             raise_remote_error):
         def iterator(event):
             while event.name == 'STREAM':
@@ -197,7 +198,7 @@ class Server(SocketBase):
             functor = self._methods.get(event.name, None)
             if functor is None:
                 raise NameError(event.name)
-            functor.pattern.process_call(socket, event, functor)
+            functor.pattern.process_call(self._context, socket, event, functor)
         except Exception:
             try:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -282,8 +283,8 @@ class Client(SocketBase):
                         'calling remote method {0}'.format(method))
 
             pattern = self._select_pattern(event)
-            return pattern.process_answer(socket, event, method, timeout,
-                    self._raise_remote_error)
+            return pattern.process_answer(self._context, socket, event, method,
+                timeout, self._raise_remote_error)
         except:
             socket.close()
             socket.channel.close()
@@ -365,7 +366,9 @@ class Puller(SocketBase):
             try:
                 if event.name not in self._methods:
                     raise NameError(event.name)
-                self._methods[event.name](*event.args)
+                self._context.middleware_call_procedure(
+                    self._methods[event.name],
+                    *event.args)
             except Exception:
                 traceback.print_exc(file=sys.stderr)
 

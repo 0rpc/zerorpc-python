@@ -152,3 +152,100 @@ def test_raise_error():
 
     client.close()
     srv.close()
+
+
+def test_call_procedure():
+    c = zerorpc.Context()
+
+    def test(argument):
+        return 'ret_real:' + argument
+    assert c.middleware_call_procedure(test, 'dummy') == 'ret_real:dummy'
+
+    def middleware_1(procedure, *args, **kwargs):
+        return 'ret_middleware_1:' + procedure(*args, **kwargs)
+    cnt = c.register_middleware({
+        'call_procedure': middleware_1
+        })
+    assert cnt == 1
+    assert c.middleware_call_procedure(test, 'dummy') == \
+        'ret_middleware_1:ret_real:dummy'
+
+    def middleware_2(procedure, *args, **kwargs):
+        return 'ret_middleware_2:' + procedure(*args, **kwargs)
+    cnt = c.register_middleware({
+        'call_procedure': middleware_2
+        })
+    assert cnt == 1
+    assert c.middleware_call_procedure(test, 'dummy') == \
+        'ret_middleware_2:ret_middleware_1:ret_real:dummy'
+
+    def mangle_arguments(procedure, *args, **kwargs):
+        return procedure(args[0].upper())
+    cnt = c.register_middleware({
+        'call_procedure': mangle_arguments
+        })
+    assert cnt == 1
+    assert c.middleware_call_procedure(test, 'dummy') == \
+        'ret_middleware_2:ret_middleware_1:ret_real:DUMMY'
+
+    endpoint = 'ipc://test_call_procedure'
+
+    # client/server
+    class Server(zerorpc.Server):
+        def test(self, argument):
+            return 'ret_real:' + argument
+    server = Server(heartbeat=1, context=c)
+    server.bind(endpoint)
+    gevent.spawn(server.run)
+    client = zerorpc.Client(heartbeat=1, context=c)
+    client.connect(endpoint)
+    assert client.test('dummy') == \
+        'ret_middleware_2:ret_middleware_1:ret_real:DUMMY'
+    client.close()
+    server.close()
+
+    # push/pull
+    trigger = gevent.event.Event()
+    class Puller(zerorpc.Puller):
+        argument = None
+
+        def test(self, argument):
+            self.argument = argument
+            trigger.set()
+            return self.argument
+
+    puller = Puller(context=c)
+    puller.bind(endpoint)
+    gevent.spawn(puller.run)
+    pusher = zerorpc.Pusher(context=c)
+    pusher.connect(endpoint)
+    trigger.clear()
+    pusher.test('dummy')
+    trigger.wait()
+    assert puller.argument == 'DUMMY'
+    #FIXME: These seems to be broken
+    # pusher.close()
+    # puller.close()
+
+    # pub/sub
+    trigger = gevent.event.Event()
+    class Subscriber(zerorpc.Subscriber):
+        argument = None
+
+        def test(self, argument):
+            self.argument = argument
+            trigger.set()
+            return self.argument
+
+    subscriber = Subscriber(context=c)
+    subscriber.bind(endpoint)
+    gevent.spawn(subscriber.run)
+    publisher = zerorpc.Publisher(context=c)
+    publisher.connect(endpoint)
+    trigger.clear()
+    publisher.test('dummy')
+    trigger.wait()
+    assert subscriber.argument == 'DUMMY'
+    #FIXME: These seems to be broken
+    # publisher.close()
+    # subscriber.close()
