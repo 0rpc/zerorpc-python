@@ -1,26 +1,4 @@
 # -*- coding: utf-8 -*-
-# Open Source Initiative OSI - The MIT License (MIT):Licensing
-#
-# The MIT License (MIT)
-# Copyright (c) 2012 DotCloud Inc (François-Xavier Bourlet <fx@dotcloud.com>)
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
 
 from nose.tools import assert_raises
@@ -47,7 +25,7 @@ def test_close_server_socket():
     event = server.recv()
     server_channel = server.channel(event)
     server_socket = zerorpc.SocketOnChannel(server_channel, heartbeat=1)
-    open_event = server_socket.recv()
+    server_socket.recv()
 
     gevent.sleep(3)
     print 'CLOSE SERVER SOCKET!!!'
@@ -79,7 +57,7 @@ def test_close_client_socket():
     event = server.recv()
     server_channel = server.channel(event)
     server_socket = zerorpc.SocketOnChannel(server_channel, heartbeat=1)
-    open_event = server_socket.recv()
+    server_socket.recv()
 
     gevent.sleep(3)
     print 'CLOSE CLIENT SOCKET!!!'
@@ -152,6 +130,7 @@ def test_heartbeat_can_open_channel_client_close():
     server_socket.close()
     server_channel.close()
     server.close()
+
 
 def test_do_some_req_rep():
     endpoint = 'ipc://test_do_some_req_rep'
@@ -336,8 +315,10 @@ def test_do_some_req_rep_client_timeout():
     client.close()
     server.close()
 
+
 class CongestionError(Exception):
     pass
+
 
 def test_congestion_control_server_pushing():
     endpoint = 'ipc://test_congestion_control_server_pushing'

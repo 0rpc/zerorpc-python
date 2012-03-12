@@ -1,28 +1,5 @@
 # -*- coding: utf-8 -*-
-# Open Source Initiative OSI - The MIT License (MIT):Licensing
-#
-# The MIT License (MIT)
-# Copyright (c) 2012 DotCloud Inc (François-Xavier Bourlet <fx@dotcloud.com>)
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-# Based on https://github.com/traviscline/gevent-zeromq/blob/master/gevent_zeromq/core.py
+# Based on https://github.com/traviscline/gevent-zeromq/
 
 
 # We want to act like zmq
@@ -33,6 +10,7 @@ import zmq as _zmq
 
 import gevent.event
 import gevent.core
+
 
 class Context(_zmq.Context):
 
@@ -51,8 +29,8 @@ class Socket(_zmq.Socket):
         self._writable = gevent.event.Event()
         try:
             # gevent>=1.0
-            self._state_event = gevent.hub.get_hub().loop.io(on_state_changed_fd,
-                    gevent.core.READ)
+            self._state_event = gevent.hub.get_hub().loop.io(
+                on_state_changed_fd, gevent.core.READ)
             self._state_event.start(self._on_state_changed)
         except AttributeError:
             # gevent<1.0
@@ -78,7 +56,7 @@ class Socket(_zmq.Socket):
                 self._state_event.stop()
             except AttributeError:
                 # gevent<1.0
-                 self._state_event.cancel()
+                self._state_event.cancel()
         super(Socket, self).close()
 
     def send(self, data, flags=0, copy=True, track=False):
@@ -108,5 +86,6 @@ class Socket(_zmq.Socket):
             while not self._readable.wait(timeout=0.5):
                 events = self.getsockopt(_zmq.EVENTS)
                 if bool(events & _zmq.POLLIN):
-                    print "/!\\ gevent_zeromq BUG /!\\ catching after missing event /!\\"
+                    print "/!\\ gevent_zeromq BUG /!\\ " \
+                        "catching after missing event /!\\"
                     break

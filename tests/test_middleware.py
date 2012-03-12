@@ -1,26 +1,4 @@
 # -*- coding: utf-8 -*-
-# Open Source Initiative OSI - The MIT License (MIT):Licensing
-#
-# The MIT License (MIT)
-# Copyright (c) 2012 DotCloud Inc (François-Xavier Bourlet <fx@dotcloud.com>)
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
 
 from nose.tools import assert_raises
@@ -28,6 +6,7 @@ import gevent
 
 from zerorpc import zmq
 import zerorpc
+
 
 def test_resolve_endpoint():
     test_endpoint = 'ipc://test_resolve_endpoint'
@@ -72,6 +51,7 @@ def test_resolve_endpoint():
     print 'resolve toto:', c2.middleware_resolve_endpoint('toto')
     assert c2.middleware_resolve_endpoint('toto') == 'toto'
 
+
 def test_resolve_endpoint_events():
     test_endpoint = 'ipc://test_resolve_endpoint_events'
     c = zerorpc.Context()
@@ -86,8 +66,6 @@ def test_resolve_endpoint_events():
         def hello(self):
             print 'heee'
             return 'world'
-
-
 
     srv = Srv(heartbeat=1, context=c)
     with assert_raises(zmq.ZMQError):
@@ -104,6 +82,7 @@ def test_resolve_endpoint_events():
 
     client.close()
     srv.close()
+
 
 def test_raise_error():
     endpoint = 'ipc://test_raise_error'
