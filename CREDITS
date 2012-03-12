@@ -1,9 +1,0 @@
-initial protocol
-	- Sébastien Pahl <sebastien.pahl/\gmail.com>
-	- Solomon Hykes <solomon/\dotcloud.com>
-
-initial implementation
-	- Sébastien Pahl <sebastien.pahl/\gmail.com>
-
-gevent implementation
-	- François-Xavier Bourlet <fx/\dotcloud.com>
