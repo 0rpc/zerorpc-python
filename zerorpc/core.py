@@ -353,7 +353,7 @@ class Puller(SocketBase):
 
     def close(self):
         self.stop()
-        super(Pusher, self).close()
+        super(Puller, self).close()
 
     def __call__(self, method, *args):
         if method not in self._methods:
