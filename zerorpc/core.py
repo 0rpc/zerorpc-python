@@ -341,7 +341,7 @@ class Puller(SocketBase):
             self._methods = methods
         else:
             server_methods = set(getattr(self, k)
-                    for k in dir(Pusher) if not k.startswith('_'))
+                    for k in dir(Puller) if not k.startswith('_'))
             self._methods = dict((k, getattr(methods, k))
                     for k in dir(methods)
                     if callable(getattr(methods, k))
