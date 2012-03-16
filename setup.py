@@ -36,7 +36,7 @@ setup(
     description='zerorpc is a flexible RPC based on zeromq.',
     author=zerorpc.__author__,
     url='https://github.com/dotcloud/zerorpc-python',
-    packages=['zerorpc'],
+    packages=['zerorpc', 'zerorpc.scripts'],
     install_requires=[
             'argparse',
             'gevent',
@@ -44,9 +44,6 @@ setup(
             'pyzmq-static==2.1.7',
     ],
     zip_safe=False,
-    scripts=[
-            'bin/zerorpc-client'
-        ],
     license='MIT',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
@@ -55,4 +52,8 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
     ),
+    entry_points="""
+    [console_scripts]
+    zerorpc-client = zerorpc.scripts.client:main
+    """,
 )
