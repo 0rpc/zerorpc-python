@@ -152,17 +152,17 @@ Here's how to expose an object of your choice as a zeroservice::
     class Cooler:
         """ Various convenience methods to make things cooler. """
 
-    def add_man(self, sentence):
-        """ End a sentence with ", man!" to make it sound cooler, and return the result. """
-        return sentence + ", man!"
-
-    def add_42(self, n):
-        """ Add 42 to an integer argument to make it cooler, and return the result. """
-        return n + 42
-
-    def boat(self, sentence):
-        """ Replace a sentence with "I'm on a boat!", and return that, because it's cooler. """
-        return "I'm on a boat!"
+        def add_man(self, sentence):
+            """ End a sentence with ", man!" to make it sound cooler, and return the result. """
+            return sentence + ", man!"
+    
+        def add_42(self, n):
+            """ Add 42 to an integer argument to make it cooler, and return the result. """
+            return n + 42
+    
+        def boat(self, sentence):
+            """ Replace a sentence with "I'm on a boat!", and return that, because it's cooler. """
+            return "I'm on a boat!"
     
     import zerorpc
     
@@ -178,9 +178,9 @@ Now, in another terminal, let's try connecting to our awesome zeroservice::
 
   $ zerorpc -j tcp://:4242 add_42 1
   43
-  $ zerorpc tcp://:4242 add_man "I own a mint-condition Wolkswagen Golf"
+  $ zerorpc tcp://:4242 add_man 'I own a mint-condition Wolkswagen Golf'
   "I own a mint-condition Wolkswagen Gold, man!"
-  $ zerorpc tcp://:4242 boat "I own a mint-condition Wolkswagen Gold, man!"
+  $ zerorpc tcp://:4242 boat 'I own a mint-condition Wolkswagen Gold, man!'
   "I'm on a boat!"
 
 
