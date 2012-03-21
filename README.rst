@@ -4,7 +4,7 @@ zerorpc
 zerorpc is a flexible RPC implementation based on zeromq and messagepack. 
 Service APIs exposed with zerorpc are called "zeroservices".
 
-zerorpc comes with a convenient script, "zerorpc-client", allowing to:
+zerorpc comes with a convenient script, "zerorpc", allowing to:
 
 * expose Python modules without modifying a single line of code,
 * call those modules remotely through the command line.
@@ -16,7 +16,7 @@ Create a server with a one-liner
 Let's see zerorpc in action with a simple example. In a first terminal,
 we will expose the Python "time" module::
 
-  $ zerorpc-client --server --bind tcp://0:1234 time
+  $ zerorpc --server --bind tcp://0:1234 time
 
 .. note::
    The bind address uses the zeromq address format. You are not limited
@@ -31,21 +31,21 @@ Call the server from the command-line
 
 Now, in another terminal, call the exposed module::
 
-  $ zerorpc-client --client --connect tcp://0:1234 strftime %Y/%m/%d
+  $ zerorpc --client --connect tcp://0:1234 strftime %Y/%m/%d
   Connecting to "tcp://0:1234"
   "2011/03/07"
 
 Since the client usecase is the most common one, "--client" is the default
 parameter, and you can remove it safely::
 
-  $ zerorpc-client --connect tcp://0:1234 strftime %Y/%m/%d
+  $ zerorpc --connect tcp://0:1234 strftime %Y/%m/%d
   Connecting to "tcp://0:1234"
   "2011/03/07"
 
 Moreover, since the most common usecase is to *connect* (as opposed to *bind*)
 you can also omit "--connect"::
 
-  $ zerorpc-client tcp://0:1234 strftime %Y/%m/%d
+  $ zerorpc tcp://0:1234 strftime %Y/%m/%d
   Connecting to "tcp://0:1234"
   "2011/03/07"
 
@@ -56,7 +56,7 @@ See remote service documentation
 You can introspect the remote service; it happens automatically if you don't
 specify the name of the function you want to call::
 
-  $ zerorpc-client tcp://0:1234
+  $ zerorpc tcp://0:1234
   Connecting to "tcp://0:1234"
   tzset       tzset(zone)
   ctime       ctime(seconds) -> string
@@ -78,7 +78,7 @@ Specifying non-string arguments
 Now, see what happens if we try to call a function expecting a non-string
 argument::
 
-  $ zerorpc-client tcp://0:1234 sleep 3
+  $ zerorpc tcp://0:1234 sleep 3
   Connecting to "tcp://0:1234"
   Traceback (most recent call last):
   [...]
@@ -87,7 +87,7 @@ argument::
 That's because all command-line arguments are handled as strings. Don't worry,
 we can specify any kind of argument using JSON encoding::
 
-  $ zerorpc-client --json tcp://0:1234 sleep 3
+  $ zerorpc --json tcp://0:1234 sleep 3
   Connecting to "tcp://0:1234"
   [wait for 3 seconds...]
   null
@@ -101,12 +101,12 @@ your server to act as a kind of worker, and connect to a hub or queue which
 will dispatch requests. You can achieve this by swapping "--bind" and
 "--connect"::
 
-  $ zerorpc-client --bind tcp://0:1234 localtime
+  $ zerorpc --bind tcp://0:1234 localtime
 
 We now have "something" wanting to call the "localtime" function, and waiting
 for a worker to connect to it. Let's start the worker::
 
-  $ zerorpc-client --server tcp://0:1234 time
+  $ zerorpc --server tcp://0:1234 time
 
 The worker will connect to the listening client and ask him "what should I 
 do?"; the client will send the "localtime" function call; the worker will
@@ -120,10 +120,10 @@ Listening on multiple addresses
 What if you want to run the same server on multiple addresses? Just repeat
 the "--bind" option::
 
-  $ zerorpc-client --server --bind tcp://0:1234 --bind ipc:///tmp/time time
+  $ zerorpc --server --bind tcp://0:1234 --bind ipc:///tmp/time time
 
-You can then connect to it using either "zerorpc-client tcp://0:1234" or
-"zerorpc-client ipc:///tmp/time".
+You can then connect to it using either "zerorpc tcp://0:1234" or
+"zerorpc ipc:///tmp/time".
 
 Wait, there is more! You can even mix "--bind" and "--connect". That means
 that your server will wait for requests on a given address, *and* connect
