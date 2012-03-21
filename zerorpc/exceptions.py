@@ -30,7 +30,7 @@ class LostRemote(Exception):
 class TimeoutExpired(Exception):
 
     def __init__(self, timeout_s, when=None):
-        msg = 'timeout after {0}s'
+        msg = 'timeout after {0}s'.format(timeout_s)
         if when:
             msg = '{0}, when {1}'.format(msg, when)
         super(TimeoutExpired, self).__init__(msg)
