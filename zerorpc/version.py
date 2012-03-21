@@ -22,10 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .version import *
-from .exceptions import *
-from .context import *
-from .socket import *
-from .channel import *
-from .events import *
-from .core import *
+__title__ = 'zerorpc'
+__version__ = '0.1.0'
+__author__ = 'dotCloud, Inc.'
+__license__ = 'MIT'
+__copyright__ = 'Copyright 2012 dotCloud, Inc.'
