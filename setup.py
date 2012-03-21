@@ -22,7 +22,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import zerorpc
+__title__ = 'zerorpc'
+__version__ = '0.1.0'
+__author__ = 'dotCloud, Inc.'
+__license__ = 'MIT'
+__copyright__ = 'Copyright 2012 dotCloud, Inc.'
+
 
 try:
     from setuptools import setup
@@ -32,9 +37,9 @@ except ImportError:
 
 setup(
     name='zerorpc',
-    version=zerorpc.__version__,
+    version=__version__,
     description='zerorpc is a flexible RPC based on zeromq.',
-    author=zerorpc.__author__,
+    author=__author__,
     url='https://github.com/dotcloud/zerorpc-python',
     packages=['zerorpc'],
     install_requires=[
