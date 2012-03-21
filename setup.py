@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from zerorpc.version import __version__, __author__
+execfile('zerorpc/version.py')
 
 try:
     from setuptools import setup
