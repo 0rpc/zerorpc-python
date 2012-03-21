@@ -45,7 +45,8 @@ setup(
     ],
     zip_safe=False,
     scripts=[
-            'bin/zerorpc-client'
+            'bin/zerorpc-client',
+            'bin/zerorpc'
         ],
     license='MIT',
     classifiers=(
