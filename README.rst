@@ -4,7 +4,8 @@ zerorpc
 zerorpc is a flexible RPC implementation based on zeromq and messagepack. 
 Service APIs exposed with zerorpc are called "zeroservices".
 
-zerorpc comes with a convenient script, "zerorpc-client", allowing to:
+zerorpc can be used programmatically or from the command-line. It comes
+with a convenient script, "zerorpc-client", allowing to:
 
 * expose Python modules without modifying a single line of code,
 * call those modules remotely through the command line.
@@ -139,3 +140,49 @@ it won't affect the worker (that's the magic of zeromq).
    addresses, and will dispatch requests to available workers. If you want
    to connect to multiple remote servers for high availability purposes,
    you insert something like HAProxy in the middle.
+
+
+Exposing a zeroservice programmatically
+---------------------------------------
+
+Of course, the command-line is simply a convenience wrapper for the zerorpc python API. Below are a few examples.
+
+Here's how to expose an object of your choice as a zeroservice::
+
+    class Cooler:
+        """ Various convenience methods to make things cooler. """
+
+    def add_man(self, sentence):
+        """ End a sentence with ", man!" to make it sound cooler, and return the result. """
+        return sentence + ", man!"
+
+    def add_42(self, n):
+        """ Add 42 to an integer argument to make it cooler, and return the result. """
+        return n + 42
+
+    def boat(self, sentence):
+        """ Replace a sentence with "I'm on a boat!", and return that, because it's cooler. """
+        return "I'm on a boat!"
+    
+    import zerorpc
+    
+    s = zerorpc.Server(Cooler())
+    s.bind("tcp://0.0.0.0:4242")
+    s.run()
+
+Let's save this code to *cooler.py* and run it::
+
+  $ python cooler.py
+
+Now, in another terminal, let's try connecting to our awesome zeroservice::
+
+  $ zerorpc -j tcp://:4242 add_42 1
+  43
+  $ zerorpc tcp://:4242 add_man "I own a mint-condition Wolkswagen Golf"
+  "I own a mint-condition Wolkswagen Gold, man!"
+  $ zerorpc tcp://:4242 boat "I own a mint-condition Wolkswagen Gold, man!"
+  "I'm on a boat!"
+
+
+Congratulations! You have just made the World a little cooler with your first zeroservice, man!
+
