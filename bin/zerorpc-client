@@ -28,6 +28,7 @@ import argparse
 import json
 import sys
 import inspect
+import os
 from pprint import pprint
 
 import zerorpc
@@ -96,6 +97,7 @@ def setup_links(args, socket):
 def run_server(args):
     server_obj_path = args.command
 
+    sys.path.insert(0, os.getcwd())
     if '.' in server_obj_path:
         modulepath, objname = server_obj_path.rsplit('.', 1)
         module = __import__(modulepath, fromlist=[objname])
