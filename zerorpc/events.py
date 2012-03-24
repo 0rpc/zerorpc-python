@@ -107,6 +107,8 @@ class Receiver(object):
 
 class Event(object):
 
+    __slots__ = [ '_name', '_args', '_header' ]
+
     def __init__(self, name, args, context, header=None):
         self._name = name
         self._args = args
