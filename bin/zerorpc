@@ -211,13 +211,24 @@ def run_client(args):
 
 def main():
     args = parser.parse_args()
+
     if args.bind or args.connect:
         if args.command:
             args.params.insert(0, args.command)
         args.command = args.address
         args.address = None
+
+    if not (args.bind or args.connect or args.address):
+        parser.print_help()
+        return -1
+
     if args.client:
         return run_client(args)
+
+    if not args.command:
+        parser.print_help()
+        return -1
+
     return run_server(args)
 
 if __name__ == '__main__':
