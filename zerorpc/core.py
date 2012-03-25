@@ -51,18 +51,7 @@ class ServerBase(object):
         self._name = name or repr(methods)
         self._task_pool = gevent.pool.Pool(size=pool_size)
         self._acceptor_task = None
-
-        if hasattr(methods, '__getitem__'):
-            self._methods = methods
-        else:
-            server_methods = set(getattr(self, k) for k in dir(Server) if not
-                    k.startswith('_'))
-            self._methods = dict((k, getattr(methods, k))
-                    for k in dir(methods)
-                    if callable(getattr(methods, k))
-                    and not k.startswith('_')
-                    and getattr(methods, k) not in server_methods
-                    )
+        self._methods = self._zerorpc_filter_methods(ServerBase, self, methods)
 
         self._inject_builtins()
         self._heartbeat_freq = heartbeat
@@ -70,6 +59,19 @@ class ServerBase(object):
         for (k, functor) in self._methods.items():
             if not isinstance(functor, DecoratorBase):
                 self._methods[k] = rep(functor)
+
+    @staticmethod
+    def _zerorpc_filter_methods(cls, self, methods):
+        if hasattr(methods, '__getitem__'):
+            return methods
+        server_methods = set(getattr(self, k) for k in dir(cls) if not
+                k.startswith('_'))
+        return dict((k, getattr(methods, k))
+                for k in dir(methods)
+                if callable(getattr(methods, k))
+                and not k.startswith('_')
+                and getattr(methods, k) not in server_methods
+                )
 
     def __del__(self):
         self.close()
@@ -324,6 +326,9 @@ class Server(SocketBase, ServerBase):
     def __init__(self, methods=None, name=None, context=None, pool_size=None,
             heartbeat=5):
         SocketBase.__init__(self, zmq.XREP, context)
+        if methods is None:
+            methods = self
+        methods = ServerBase._zerorpc_filter_methods(Server, self, methods)
         ServerBase.__init__(self, self._events, methods, name, pool_size, heartbeat)
 
     def close(self):
@@ -366,18 +371,7 @@ class Puller(SocketBase):
         if methods is None:
             methods = self
 
-        if hasattr(methods, '__getitem__'):
-            self._methods = methods
-        else:
-            server_methods = set(getattr(self, k)
-                    for k in dir(Puller) if not k.startswith('_'))
-            self._methods = dict((k, getattr(methods, k))
-                    for k in dir(methods)
-                    if callable(getattr(methods, k))
-                    and not k.startswith('_')
-                    and getattr(methods, k) not in server_methods
-                    )
-
+        self._methods = ServerBase._zerorpc_filter_methods(Puller, self, methods)
         self._receiver_task = None
 
     def close(self):
