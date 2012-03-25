@@ -59,12 +59,10 @@ def test_client_server_activate_heartbeat():
             gevent.sleep(3)
             return 42
 
-        def slow(self):
-            gevent.sleep(10)
-
     srv = MySrv(heartbeat=1)
     srv.bind(endpoint)
     gevent.spawn(srv.run)
+    gevent.sleep(0)
 
     client = zerorpc.Client(heartbeat=1)
     client.connect(endpoint)

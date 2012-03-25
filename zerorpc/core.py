@@ -34,8 +34,9 @@ import gevent.coros
 
 import gevent_zmq as zmq
 from .exceptions import TimeoutExpired, RemoteError
-from .channel import ChannelMultiplexer
-from .socket import SocketBase, SocketOnChannel
+from .channel import ChannelMultiplexer, BufferedChannel
+from .socket import SocketBase
+from .heartbeat import HeartBeatOnChannel
 
 
 class DecoratorBase(object):
@@ -70,20 +71,21 @@ class DecoratorBase(object):
 
 class PatternReqRep():
 
-    def process_call(self, context, socket, event, functor):
+    def process_call(self, context, bufchan, event, functor):
         result = context.middleware_call_procedure(functor, *event.args)
-        socket.emit('OK', (result,))
+        bufchan.emit('OK', (result,))
 
     def accept_answer(self, event):
         return True
 
-    def process_answer(self, context, socket, event, method, timeout,
+    def process_answer(self, context, bufchan, event, method, timeout,
             raise_remote_error):
         result = event.args[0]
         if event.name == 'ERR':
             raise_remote_error(event)
-        socket.close()
-        socket.channel.close()
+        bufchan.close()
+        bufchan.channel.close()
+        bufchan.channel.channel.close()
         return result
 
 
@@ -93,25 +95,25 @@ class rep(DecoratorBase):
 
 class PatternReqStream():
 
-    def process_call(self, context, socket, event, functor):
+    def process_call(self, context, bufchan, event, functor):
         for result in iter(context.middleware_call_procedure(functor,
                 *event.args)):
-            socket.emit('STREAM', result)
-        socket.emit('STREAM_DONE', None)
+            bufchan.emit('STREAM', result)
+        bufchan.emit('STREAM_DONE', None)
 
     def accept_answer(self, event):
         return event.name in ('STREAM', 'STREAM_DONE')
 
-    def process_answer(self, context, socket, event, method, timeout,
+    def process_answer(self, context, bufchan, event, method, timeout,
             raise_remote_error):
         def iterator(event):
             while event.name == 'STREAM':
                 yield event.args
-                event = socket.recv()
+                event = bufchan.recv()
             if event.name == 'ERR':
                 raise_remote_error(event)
-            socket.close()
-            socket.channel.close()
+            bufchan.close()
+            bufchan.channel.channel.close()
         return iterator(event)
 
 
@@ -191,14 +193,15 @@ class Server(SocketBase):
     def _async_task(self, initial_event):
         protocol_v2 = initial_event.header.get('v', 1) >= 2
         channel = self._multiplexer.channel(initial_event)
-        socket = SocketOnChannel(channel, heartbeat=self._heartbeat_freq,
-                passive_heartbeat=not protocol_v2)
-        event = socket.recv()
+        hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
+                passive=not protocol_v2)
+        bufchan = BufferedChannel(hbchan)
+        event = bufchan.recv()
         try:
             functor = self._methods.get(event.name, None)
             if functor is None:
                 raise NameError(event.name)
-            functor.pattern.process_call(self._context, socket, event, functor)
+            functor.pattern.process_call(self._context, bufchan, event, functor)
         except Exception:
             try:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -210,14 +213,15 @@ class Server(SocketBase):
                 human_msg = str(exc_value)
 
                 if protocol_v2:
-                    socket.emit('ERR', (name, human_msg, human_traceback))
+                    bufchan.emit('ERR', (name, human_msg, human_traceback))
                 else:
-                    socket.emit('ERR', (repr(exc_value),))
+                    bufchan.emit('ERR', (repr(exc_value),))
             finally:
                 del exc_traceback
         finally:
-            socket.close()
-            socket.channel.close()
+            bufchan.close()
+            bufchan.channel.close()
+            bufchan.channel.channel.close()
 
     def _acceptor(self):
         while True:
@@ -274,42 +278,44 @@ class Client(SocketBase):
         msg = 'Unable to find a pattern for: {0}'.format(event)
         raise RuntimeError(msg)
 
-    def _process_response(self, method, socket, timeout):
+    def _process_response(self, method, bufchan, timeout):
         try:
             try:
-                event = socket.recv(timeout)
+                event = bufchan.recv(timeout)
             except TimeoutExpired:
                 raise TimeoutExpired(timeout,
                         'calling remote method {0}'.format(method))
 
             pattern = self._select_pattern(event)
-            return pattern.process_answer(self._context, socket, event, method,
+            return pattern.process_answer(self._context, bufchan, event, method,
                 timeout, self._raise_remote_error)
         except:
-            socket.close()
-            socket.channel.close()
+            bufchan.close()
+            bufchan.channel.close()
+            bufchan.channel.channel.close()
             raise
 
     def __call__(self, method, *args, **kargs):
         timeout = kargs.get('timeout', self._timeout)
         channel = self._multiplexer.channel()
-        socket = SocketOnChannel(channel, heartbeat=self._heartbeat_freq,
-                passive_heartbeat=self._passive_heartbeat,
-                inqueue_size=kargs.get('slots', 100))
+        hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
+                passive=self._passive_heartbeat)
+        bufchan = BufferedChannel(hbchan, inqueue_size=kargs.get('slots', 100))
 
-        socket.emit(method, args)
+        bufchan.emit(method, args)
 
         try:
             if kargs.get('async', False) is False:
-                return self._process_response(method, socket, timeout)
+                return self._process_response(method, bufchan, timeout)
 
             async_result = gevent.event.AsyncResult()
-            gevent.spawn(self._process_response, method, socket,
+            gevent.spawn(self._process_response, method, bufchan,
                     timeout).link(async_result)
             return async_result
         except:
-            socket.close()
-            channel.close()
+            bufchan.close()
+            bufchan.channel.close()
+            bufchan.channel.channel.close()
             raise
 
     def __getattr__(self, method):

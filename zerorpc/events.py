@@ -116,7 +116,7 @@ class Event(object):
             context = context or Context.get_instance()
             self._header = {
                     'message_id': context.new_msgid(),
-                    'v': 2
+                    'v': 3
                     }
         else:
             self._header = header
@@ -128,6 +128,10 @@ class Event(object):
     @property
     def name(self):
         return self._name
+
+    @name.setter
+    def name(self, v):
+        self._name = v
 
     @property
     def args(self):

@@ -149,3 +149,85 @@ class Channel(object):
 # TODO debug middleware
 #        print time.time(), 'channel recv', event
         return event
+
+
+class BufferedChannel(object):
+
+    def __init__(self, channel, inqueue_size=100):
+        self._channel = channel
+        self._input_queue_size = inqueue_size
+        self._remote_queue_open_slots = 1
+        self._input_queue_reserved = 1
+        self._remote_can_recv = gevent.event.Event()
+        self._input_queue = gevent.queue.Queue()
+        self._lost_remote = False
+        self._verbose = False
+        self._recv_task = gevent.spawn(self._recver)
+
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        if self._recv_task:
+            self._recv_task.kill()
+
+    def _recver(self):
+        while True:
+            event = self._channel.recv()
+            if event.name == '_zpc_more':
+                try:
+                    self._remote_queue_open_slots += int(event.args[0])
+                except Exception as e:
+                    print >> sys.stderr, \
+                            'gevent_zerorpc.BufferedChannel._recver,', \
+                            'exception:', e
+                if self._remote_queue_open_slots > 0:
+                    self._remote_can_recv.set()
+            elif self._input_queue.qsize() == self._input_queue_size:
+                raise RuntimeError(
+                        'BufferedChannel, queue overflow on event:', event)
+            else:
+                self._input_queue.put(event)
+
+    def emit(self, name, args, xheader={}, block=True, timeout=None):
+        if self._lost_remote:
+            raise self._lost_remote_exception()
+        if self._remote_queue_open_slots == 0:
+            if not block:
+                return False
+            self._remote_can_recv.clear()
+            self._remote_can_recv.wait(timeout=timeout)
+        self._remote_queue_open_slots -= 1
+        try:
+            self._channel.emit(name, args, xheader)
+        except:
+            self._remote_queue_open_slots += 1
+            raise
+        return True
+
+    def _request_data(self):
+        open_slots = self._input_queue_size - self._input_queue_reserved
+        self._input_queue_reserved += open_slots
+        self._channel.emit('_zpc_more', (open_slots,))
+
+    def recv(self, timeout=None):
+        if self._lost_remote:
+            raise self._lost_remote_exception()
+
+        if self._verbose:
+            if self._input_queue_reserved < self._input_queue_size / 2:
+                self._request_data()
+        else:
+            self._verbose = True
+
+        try:
+            event = self._input_queue.get(timeout=timeout)
+        except gevent.queue.Empty:
+            raise TimeoutExpired(timeout)
+
+        self._input_queue_reserved -= 1
+        return event
+
+    @property
+    def channel(self):
+        return self._channel

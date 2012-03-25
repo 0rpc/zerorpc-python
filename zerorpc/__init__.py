@@ -29,3 +29,4 @@ from .socket import *
 from .channel import *
 from .events import *
 from .core import *
+from .heartbeat import *

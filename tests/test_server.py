@@ -104,7 +104,7 @@ def test_client_server_client_timeout():
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client = zerorpc.Client(timeout=1)
+    client = zerorpc.Client(timeout=2)
     client.connect(endpoint)
 
     with assert_raises(zerorpc.TimeoutExpired):
@@ -125,7 +125,7 @@ def test_client_server_exception():
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client = zerorpc.Client(timeout=1)
+    client = zerorpc.Client(timeout=2)
     client.connect(endpoint)
 
     with assert_raises(zerorpc.RemoteError):
@@ -147,7 +147,7 @@ def test_client_server_detailed_exception():
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client = zerorpc.Client(timeout=1)
+    client = zerorpc.Client(timeout=2)
     client.connect(endpoint)
 
     with assert_raises(zerorpc.RemoteError):
