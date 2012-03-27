@@ -33,9 +33,6 @@ class SocketBase(object):
         self._context = context or Context.get_instance()
         self._events = Events(zmq_socket_type, context)
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         self._events.close()
 

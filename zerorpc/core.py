@@ -73,9 +73,6 @@ class ServerBase(object):
                 and getattr(methods, k) not in server_methods
                 )
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         self.stop()
         self._multiplexer.close()
@@ -151,12 +148,13 @@ class ServerBase(object):
         try:
             self._acceptor_task.get()
         finally:
-            self._acceptor_task = None
+            self.stop()
             self._task_pool.join(raise_error=True)
 
     def stop(self):
         if self._acceptor_task is not None:
-            self._acceptor_task.kill(block=False)
+            self._acceptor_task.kill()
+            self._acceptor_task = None
 
 
 class ClientBase(object):
@@ -170,13 +168,8 @@ class ClientBase(object):
         self._heartbeat_freq = heartbeat
         self._passive_heartbeat = passive_heartbeat
 
-    def __del__(self):
-        self.close()
-        super(Client, self).__del__()
-
     def close(self):
         self._multiplexer.close()
-        super(Client, self).close()
 
     def _raise_remote_error(self, event):
         self._context.middleware_raise_error(event)
