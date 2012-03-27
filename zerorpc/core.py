@@ -33,7 +33,7 @@ import gevent.local
 import gevent.coros
 
 import gevent_zmq as zmq
-from .exceptions import TimeoutExpired, RemoteError
+from .exceptions import TimeoutExpired, RemoteError, LostRemote
 from .channel import ChannelMultiplexer, BufferedChannel
 from .socket import SocketBase
 from .heartbeat import HeartBeatOnChannel
@@ -105,11 +105,27 @@ class ServerBase(object):
             raise NameError(method)
         return self._methods[method](*args)
 
+    def _print_traceback(self, protocol_v1):
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        try:
+            traceback.print_exception(exc_type, exc_value, exc_traceback,
+                    file=sys.stderr)
+
+            if protocol_v1:
+                return (repr(exc_value),)
+
+            human_traceback = traceback.format_exc()
+            name = exc_type.__name__
+            human_msg = str(exc_value)
+            return (name, human_msg, human_traceback)
+        finally:
+            del exc_traceback
+
     def _async_task(self, initial_event):
-        protocol_v2 = initial_event.header.get('v', 1) >= 2
+        protocol_v1 = initial_event.header.get('v', 1) < 2
         channel = self._multiplexer.channel(initial_event)
         hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
-                passive=not protocol_v2)
+                passive=protocol_v1)
         bufchan = BufferedChannel(hbchan)
         event = bufchan.recv()
         try:
@@ -117,22 +133,11 @@ class ServerBase(object):
             if functor is None:
                 raise NameError(event.name)
             functor.pattern.process_call(self._context, bufchan, event, functor)
+        except LostRemote:
+            self._print_traceback(protocol_v1)
         except Exception:
-            try:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                traceback.print_exception(exc_type, exc_value, exc_traceback,
-                        file=sys.stderr)
-                human_traceback = traceback.format_exc()
-
-                name = exc_type.__name__
-                human_msg = str(exc_value)
-
-                if protocol_v2:
-                    bufchan.emit('ERR', (name, human_msg, human_traceback))
-                else:
-                    bufchan.emit('ERR', (repr(exc_value),))
-            finally:
-                del exc_traceback
+            exception_info = self._print_traceback(protocol_v1)
+            bufchan.emit('ERR', exception_info)
         finally:
             bufchan.close()
             bufchan.channel.close()
