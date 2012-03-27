@@ -259,8 +259,12 @@ class Events(object):
 
 
 class WrappedEvents(object):
+
     def __init__(self, channel):
         self._channel = channel
+
+    def close(self):
+        pass
 
     @property
     def recv_is_available(self):

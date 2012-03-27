@@ -48,6 +48,10 @@ class HeartBeatOnChannel(object):
         if not passive:
             self._start_heartbeat()
 
+    @property
+    def recv_is_available(self):
+        return self._channel.recv_is_available
+
     def __del__(self):
         self.close()
 

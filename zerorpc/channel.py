@@ -164,6 +164,10 @@ class BufferedChannel(object):
         self._verbose = False
         self._recv_task = gevent.spawn(self._recver)
 
+    @property
+    def recv_is_available(self):
+        return self._channel.recv_is_available
+
     def __del__(self):
         self.close()
 
@@ -190,8 +194,6 @@ class BufferedChannel(object):
                 self._input_queue.put(event)
 
     def emit(self, name, args, xheader={}, block=True, timeout=None):
-        if self._lost_remote:
-            raise self._lost_remote_exception()
         if self._remote_queue_open_slots == 0:
             if not block:
                 return False
@@ -211,9 +213,6 @@ class BufferedChannel(object):
         self._channel.emit('_zpc_more', (open_slots,))
 
     def recv(self, timeout=None):
-        if self._lost_remote:
-            raise self._lost_remote_exception()
-
         if self._verbose:
             if self._input_queue_reserved < self._input_queue_size / 2:
                 self._request_data()
