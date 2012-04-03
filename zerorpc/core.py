@@ -336,8 +336,7 @@ class Pusher(SocketBase):
 
 class Puller(SocketBase):
 
-    def __init__(self, methods=None, name=None, context=None,
-            zmq_socket=zmq.PULL):
+    def __init__(self, methods=None, context=None, zmq_socket=zmq.PULL):
         super(Puller, self).__init__(zmq_socket, context=context)
 
         if methods is None:
@@ -398,6 +397,7 @@ class Publisher(Pusher):
 
 class Subscriber(Puller):
 
-    def __init__(self, context=None):
-        super(Subscriber, self).__init__(context=context, zmq_socket=zmq.SUB)
+    def __init__(self, methods=None, context=None):
+        super(Subscriber, self).__init__(methods=methods, context=context,
+                zmq_socket=zmq.SUB)
         self._events.setsockopt(zmq.SUBSCRIBE, '')
