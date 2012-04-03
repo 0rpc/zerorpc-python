@@ -73,3 +73,51 @@ def test_pubsub_inheritance():
     publisher.lolita(1, 2)
     trigger.wait()
     print 'done'
+
+
+def test_pushpull_composite():
+    endpoint = 'ipc://test_pushpull_composite'
+    trigger = gevent.event.Event()
+
+    class Puller(object):
+        def lolita(self, a, b):
+            print 'lolita', a, b
+            assert a + b == 3
+            trigger.set()
+
+    pusher = zerorpc.Pusher()
+    pusher.bind(endpoint)
+
+    service = Puller()
+    puller = zerorpc.Puller(service)
+    puller.connect(endpoint)
+    gevent.spawn(puller.run)
+
+    trigger.clear()
+    pusher.lolita(1, 2)
+    trigger.wait()
+    print 'done'
+
+
+def test_pubsub_composite():
+    endpoint = 'ipc://test_pubsub_composite'
+    trigger = gevent.event.Event()
+
+    class Subscriber(object):
+        def lolita(self, a, b):
+            print 'lolita', a, b
+            assert a + b == 3
+            trigger.set()
+
+    publisher = zerorpc.Publisher()
+    publisher.bind(endpoint)
+
+    service = Subscriber()
+    subscriber = zerorpc.Subscriber(service)
+    subscriber.connect(endpoint)
+    gevent.spawn(subscriber.run)
+
+    trigger.clear()
+    publisher.lolita(1, 2)
+    trigger.wait()
+    print 'done'
