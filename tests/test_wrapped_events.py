@@ -27,10 +27,11 @@ import random
 
 from zerorpc import zmq
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_sub_events():
-    endpoint = 'ipc://test_sub_events'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -62,7 +63,7 @@ def test_sub_events():
 
 
 def test_multiple_sub_events():
-    endpoint = 'ipc://test_multiple_sub_events'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -115,7 +116,7 @@ def test_multiple_sub_events():
 
 
 def test_recursive_multiplexer():
-    endpoint = 'ipc://test_recursive_multiplexer'
+    endpoint = random_ipc_endpoint()
 
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)

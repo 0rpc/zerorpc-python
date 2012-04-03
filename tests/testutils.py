@@ -22,41 +22,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import random
+import os
 
-import gevent
+_tmpfiles = []
 
-import zerorpc
-from testutils import teardown, random_ipc_endpoint
+def random_ipc_endpoint():
+    tmpfile = '/tmp/zerorpc_test_socket_{0}.sock'.format(
+            str(random.random())[2:])
+    _tmpfiles.append(tmpfile)
+    return 'ipc://{0}'.format(tmpfile)
 
-
-def test_rcp_streaming():
-    endpoint = random_ipc_endpoint()
-
-    class MySrv(zerorpc.Server):
-
-        @zerorpc.rep
-        def range(self, max):
-            return xrange(max)
-
-        @zerorpc.stream
-        def xrange(self, max):
-            return xrange(max)
-
-    srv = MySrv(heartbeat=2)
-    srv.bind(endpoint)
-    gevent.spawn(srv.run)
-
-    client = zerorpc.Client(heartbeat=2)
-    client.connect(endpoint)
-
-    r = client.range(10)
-    assert r == tuple(range(10))
-
-    r = client.xrange(10)
-    assert getattr(r, 'next', None) is not None
-    l = []
-    print 'wait 4s for fun'
-    gevent.sleep(4)
-    for x in r:
-        l.append(x)
-    assert l == range(10)
+def teardown():
+    global _tmpfiles
+    for tmpfile in _tmpfiles:
+        print 'unlink', tmpfile
+        try:
+            os.unlink(tmpfile)
+        except Exception:
+            pass
+    _tmpfiles = []

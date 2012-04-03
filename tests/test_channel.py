@@ -25,10 +25,11 @@
 
 from zerorpc import zmq
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_events_channel_client_side():
-    endpoint = 'ipc://test_events_channel_client_side'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -53,7 +54,7 @@ def test_events_channel_client_side():
 
 
 def test_events_channel_client_side_server_send_many():
-    endpoint = 'ipc://test_events_channel_client_side_server_send_many'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -80,7 +81,7 @@ def test_events_channel_client_side_server_send_many():
 
 
 def test_events_channel_both_side():
-    endpoint = 'ipc://test_events_channel_both_side'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)

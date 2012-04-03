@@ -25,7 +25,7 @@
 
 from zerorpc import zmq
 import zerorpc
-
+from testutils import teardown, random_ipc_endpoint
 
 class MokupContext():
     _next_id = 0
@@ -92,7 +92,7 @@ def test_event():
 
 
 def test_events_req_rep():
-    endpoint = 'ipc://test_events_req_rep'
+    endpoint = random_ipc_endpoint()
     server = zerorpc.Events(zmq.REP)
     server.bind(endpoint)
 
@@ -108,7 +108,7 @@ def test_events_req_rep():
 
 
 def test_events_req_rep2():
-    endpoint = 'ipc://test_events_req_rep2'
+    endpoint = random_ipc_endpoint()
     server = zerorpc.Events(zmq.REP)
     server.bind(endpoint)
 
@@ -130,7 +130,7 @@ def test_events_req_rep2():
 
 
 def test_events_dealer_router():
-    endpoint = 'ipc://test_events_dealer_router'
+    endpoint = random_ipc_endpoint()
     server = zerorpc.Events(zmq.XREP)
     server.bind(endpoint)
 
@@ -153,7 +153,7 @@ def test_events_dealer_router():
 
 
 def test_events_push_pull():
-    endpoint = 'ipc://test_events_push_pull'
+    endpoint = random_ipc_endpoint()
     server = zerorpc.Events(zmq.PULL)
     server.bind(endpoint)
 

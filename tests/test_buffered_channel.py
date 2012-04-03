@@ -28,10 +28,11 @@ import gevent
 
 from zerorpc import zmq
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_close_server_bufchan():
-    endpoint = 'ipc://test_close_server_bufchan_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -67,7 +68,7 @@ def test_close_server_bufchan():
 
 
 def test_close_client_bufchan():
-    endpoint = 'ipc://test_close_client_bufchan_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -103,7 +104,7 @@ def test_close_client_bufchan():
 
 
 def test_heartbeat_can_open_channel_server_close():
-    endpoint = 'ipc://test_heartbeat_can_open_channel_server_close_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -137,7 +138,7 @@ def test_heartbeat_can_open_channel_server_close():
 
 
 def test_heartbeat_can_open_channel_client_close():
-    endpoint = 'ipc://test_heartbeat_can_open_channel_client_close_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -171,7 +172,7 @@ def test_heartbeat_can_open_channel_client_close():
 
 
 def test_do_some_req_rep():
-    endpoint = 'ipc://test_do_some_req_rep_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -219,7 +220,7 @@ def test_do_some_req_rep():
 
 
 def test_do_some_req_rep_lost_server():
-    endpoint = 'ipc://test_do_some_req_rep_lost_server_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -269,7 +270,7 @@ def test_do_some_req_rep_lost_server():
 
 
 def test_do_some_req_rep_lost_client():
-    endpoint = 'ipc://test_do_some_req_rep_lost_client_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -318,7 +319,7 @@ def test_do_some_req_rep_lost_client():
 
 
 def test_do_some_req_rep_client_timeout():
-    endpoint = 'ipc://test_do_some_req_rep_client_timeout_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -371,7 +372,7 @@ class CongestionError(Exception):
 
 
 def test_congestion_control_server_pushing():
-    endpoint = 'ipc://test_congestion_control_server_pushing_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)

@@ -28,10 +28,11 @@ import gevent
 
 from zerorpc import zmq
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_resolve_endpoint():
-    test_endpoint = 'ipc://test_resolve_endpoint'
+    test_endpoint = random_ipc_endpoint()
     c = zerorpc.Context()
 
     def resolve(endpoint):
@@ -75,7 +76,7 @@ def test_resolve_endpoint():
 
 
 def test_resolve_endpoint_events():
-    test_endpoint = 'ipc://test_resolve_endpoint_events'
+    test_endpoint = random_ipc_endpoint()
     c = zerorpc.Context()
 
     class Resolver():
@@ -107,7 +108,7 @@ def test_resolve_endpoint_events():
 
 
 def test_raise_error():
-    endpoint = 'ipc://test_raise_error'
+    endpoint = random_ipc_endpoint()
     c = zerorpc.Context()
 
     class DummyRaiser():
@@ -188,7 +189,7 @@ def test_call_procedure():
     assert c.middleware_call_procedure(test, 'dummy') == \
         'ret_middleware_2:ret_middleware_1:ret_real:DUMMY'
 
-    endpoint = 'ipc://test_call_procedure'
+    endpoint = random_ipc_endpoint()
 
     # client/server
     class Server(zerorpc.Server):

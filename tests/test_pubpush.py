@@ -27,10 +27,11 @@ import gevent
 import gevent.event
 
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_pushpull_inheritance():
-    endpoint = 'ipc://test_pushpull_inheritance'
+    endpoint = random_ipc_endpoint()
 
     pusher = zerorpc.Pusher()
     pusher.bind(endpoint)
@@ -53,7 +54,7 @@ def test_pushpull_inheritance():
 
 
 def test_pubsub_inheritance():
-    endpoint = 'ipc://test_pubsub_inheritance'
+    endpoint = random_ipc_endpoint()
 
     publisher = zerorpc.Publisher()
     publisher.bind(endpoint)
@@ -76,7 +77,7 @@ def test_pubsub_inheritance():
 
 
 def test_pushpull_composite():
-    endpoint = 'ipc://test_pushpull_composite'
+    endpoint = random_ipc_endpoint()
     trigger = gevent.event.Event()
 
     class Puller(object):
@@ -100,7 +101,7 @@ def test_pushpull_composite():
 
 
 def test_pubsub_composite():
-    endpoint = 'ipc://test_pubsub_composite'
+    endpoint = random_ipc_endpoint()
     trigger = gevent.event.Event()
 
     class Subscriber(object):

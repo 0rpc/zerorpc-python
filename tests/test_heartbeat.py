@@ -28,10 +28,11 @@ import gevent
 
 from zerorpc import zmq
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_close_server_hbchan():
-    endpoint = 'ipc://test_close_server_hbchan_'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -63,7 +64,7 @@ def test_close_server_hbchan():
 
 
 def test_close_client_hbchan():
-    endpoint = 'ipc://test_close_client_hbchan'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -95,7 +96,7 @@ def test_close_client_hbchan():
 
 
 def test_heartbeat_can_open_channel_server_close():
-    endpoint = 'ipc://test_heartbeat_can_open_channel_server_close'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -125,7 +126,7 @@ def test_heartbeat_can_open_channel_server_close():
 
 
 def test_heartbeat_can_open_channel_client_close():
-    endpoint = 'ipc://test_heartbeat_can_open_channel_client_close'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -155,7 +156,7 @@ def test_heartbeat_can_open_channel_client_close():
 
 
 def test_do_some_req_rep():
-    endpoint = 'ipc://test_do_some_req_rep'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -199,7 +200,7 @@ def test_do_some_req_rep():
 
 
 def test_do_some_req_rep_lost_server():
-    endpoint = 'ipc://test_do_some_req_rep_lost_server'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -245,7 +246,7 @@ def test_do_some_req_rep_lost_server():
 
 
 def test_do_some_req_rep_lost_client():
-    endpoint = 'ipc://test_do_some_req_rep_lost_client'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
@@ -292,7 +293,7 @@ def test_do_some_req_rep_lost_client():
 
 
 def test_do_some_req_rep_client_timeout():
-    endpoint = 'ipc://test_do_some_req_rep_client_timeout'
+    endpoint = random_ipc_endpoint()
     server_events = zerorpc.Events(zmq.XREP)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)

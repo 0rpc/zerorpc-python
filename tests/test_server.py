@@ -28,10 +28,11 @@ import gevent
 
 from zerorpc import zmq
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_server_manual():
-    endpoint = 'ipc://test_server_manual'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
@@ -64,7 +65,7 @@ def test_server_manual():
 
 
 def test_client_server():
-    endpoint = 'ipc://test_client_server'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
@@ -89,7 +90,7 @@ def test_client_server():
 
 
 def test_client_server_client_timeout():
-    endpoint = 'ipc://test_client_server_client_timeout'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
@@ -114,7 +115,7 @@ def test_client_server_client_timeout():
 
 
 def test_client_server_exception():
-    endpoint = 'ipc://test_client_server_exception'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
@@ -136,7 +137,7 @@ def test_client_server_exception():
 
 
 def test_client_server_detailed_exception():
-    endpoint = 'ipc://test_client_server_detailed_exception'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
@@ -166,7 +167,7 @@ def test_client_server_detailed_exception():
 
 
 def test_exception_compat_v1():
-    endpoint = 'ipc://test_exception_compat_v1'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
         pass

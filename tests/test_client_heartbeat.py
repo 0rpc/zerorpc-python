@@ -26,10 +26,11 @@
 import gevent
 
 import zerorpc
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_client_server_hearbeat():
-    endpoint = 'ipc://test_client_server_hearbeat'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
@@ -51,7 +52,7 @@ def test_client_server_hearbeat():
 
 
 def test_client_server_activate_heartbeat():
-    endpoint = 'ipc://test_client_server_activate_heartbeat'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
@@ -72,7 +73,7 @@ def test_client_server_activate_heartbeat():
 
 
 def test_client_server_passive_hearbeat():
-    endpoint = 'ipc://test_client_server_passive_hearbeat'
+    endpoint = random_ipc_endpoint()
 
     class MySrv(zerorpc.Server):
 
