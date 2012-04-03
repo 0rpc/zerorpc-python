@@ -37,17 +37,19 @@ from .exceptions import TimeoutExpired, RemoteError, LostRemote
 from .channel import ChannelMultiplexer, BufferedChannel
 from .socket import SocketBase
 from .heartbeat import HeartBeatOnChannel
+from .context import Context
 
 
 class ServerBase(object):
 
-    def __init__(self, channel, methods=None, name=None, pool_size=None,
-            heartbeat=5):
+    def __init__(self, channel, methods=None, name=None, context=None,
+            pool_size=None, heartbeat=5):
         self._multiplexer = ChannelMultiplexer(channel)
 
         if methods is None:
             methods = self
 
+        self._context = context or Context.get_instance()
         self._name = name or repr(methods)
         self._task_pool = gevent.pool.Pool(size=pool_size)
         self._acceptor_task = None
@@ -164,10 +166,11 @@ class ServerBase(object):
 
 class ClientBase(object):
 
-    def __init__(self, channel, patterns, timeout=30, heartbeat=5,
+    def __init__(self, channel, patterns, context=None, timeout=30, heartbeat=5,
             passive_heartbeat=False):
         self._multiplexer = ChannelMultiplexer(channel,
                 ignore_broadcast=True)
+        self._context = context or Context.get_instance()
         self._patterns = patterns
         self._timeout = timeout
         self._heartbeat_freq = heartbeat
@@ -327,7 +330,8 @@ class Server(SocketBase, ServerBase):
         if methods is None:
             methods = self
         methods = ServerBase._zerorpc_filter_methods(Server, self, methods)
-        ServerBase.__init__(self, self._events, methods, name, pool_size, heartbeat)
+        ServerBase.__init__(self, self._events, methods, name, context,
+                pool_size, heartbeat)
 
     def close(self):
         ServerBase.close(self)
@@ -340,8 +344,8 @@ class Client(SocketBase, ClientBase):
     def __init__(self, context=None, timeout=30, heartbeat=5,
             passive_heartbeat=False):
         SocketBase.__init__(self, zmq.XREQ, context=context)
-        ClientBase.__init__(self, self._events, Client.patterns, timeout,
-                heartbeat, passive_heartbeat)
+        ClientBase.__init__(self, self._events, Client.patterns, context,
+                timeout, heartbeat, passive_heartbeat)
 
     def close(self):
         ClientBase.close(self)
