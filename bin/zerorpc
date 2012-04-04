@@ -131,7 +131,7 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
 
         longest_name_len = max(len(name) for name, doc in r)
         return (longest_name_len, r)
-    except zerorpc.RemoteError:
+    except (zerorpc.RemoteError, NameError):
         pass
 
     if method is None:
