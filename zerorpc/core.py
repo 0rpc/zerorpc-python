@@ -131,6 +131,7 @@ class ServerBase(object):
         bufchan = BufferedChannel(hbchan)
         event = bufchan.recv()
         try:
+            self._context.middleware_load_task_context(event.header)
             functor = self._methods.get(event.name, None)
             if functor is None:
                 raise NameError(event.name)
@@ -139,7 +140,8 @@ class ServerBase(object):
             self._print_traceback(protocol_v1)
         except Exception:
             exception_info = self._print_traceback(protocol_v1)
-            bufchan.emit('ERR', exception_info)
+            bufchan.emit('ERR', exception_info,
+                    self._context.middleware_get_task_context())
         finally:
             bufchan.close()
             bufchan.channel.close()
@@ -220,7 +222,8 @@ class ClientBase(object):
                 passive=self._passive_heartbeat)
         bufchan = BufferedChannel(hbchan, inqueue_size=kargs.get('slots', 100))
 
-        bufchan.emit(method, args)
+        xheader = self._context.middleware_get_task_context()
+        bufchan.emit(method, args, xheader)
 
         try:
             if kargs.get('async', False) is False:
@@ -274,7 +277,7 @@ class PatternReqRep():
 
     def process_call(self, context, bufchan, event, functor):
         result = context.middleware_call_procedure(functor, *event.args)
-        bufchan.emit('OK', (result,))
+        bufchan.emit('OK', (result,), context.middleware_get_task_context())
 
     def accept_answer(self, event):
         return True
@@ -297,10 +300,11 @@ class rep(DecoratorBase):
 class PatternReqStream():
 
     def process_call(self, context, bufchan, event, functor):
+        xheader = context.middleware_get_task_context()
         for result in iter(context.middleware_call_procedure(functor,
                 *event.args)):
-            bufchan.emit('STREAM', result)
-        bufchan.emit('STREAM_DONE', None)
+            bufchan.emit('STREAM', result, xheader)
+        bufchan.emit('STREAM_DONE', None, xheader)
 
     def accept_answer(self, event):
         return event.name in ('STREAM', 'STREAM_DONE')
@@ -358,7 +362,8 @@ class Pusher(SocketBase):
         super(Pusher, self).__init__(zmq_socket, context=context)
 
     def __call__(self, method, *args):
-        self._events.emit(method, args)
+        self._events.emit(method, args,
+                self._context.middleware_get_task_context())
 
     def __getattr__(self, method):
         return lambda *args: self(method, *args)
@@ -390,6 +395,7 @@ class Puller(SocketBase):
             try:
                 if event.name not in self._methods:
                     raise NameError(event.name)
+                self._context.middleware_load_task_context(event.header)
                 self._context.middleware_call_procedure(
                     self._methods[event.name],
                     *event.args)
@@ -420,3 +426,43 @@ class Subscriber(Puller):
         super(Subscriber, self).__init__(methods=methods, context=context,
                 zmq_socket=zmq.SUB)
         self._events.setsockopt(zmq.SUBSCRIBE, '')
+
+
+def fork_task_context(functor, context=None):
+    '''Wrap a functor to transfer context.
+
+        Usage example:
+            gevent.spawn(zerorpc.fork_task_context(myfunction), args...)
+
+        The goal is to permit context "inheritance" from a task to another.
+        Consider the following example:
+
+            zerorpc.Server receive a new event
+              - task1 is created to handle this event this task will be linked
+                to the initial event context. zerorpc.Server does that for you.
+              - task1 make use of some zerorpc.Client instances, the initial
+                event context is transfered on every call.
+
+              - task1 spawn a new task2.
+              - task2 make use of some zerorpc.Client instances, it's a fresh
+                context. Thus there is no link to the initial context that
+                spawned task1.
+
+              - task1 spawn a new fork_task_context(task3).
+              - task3 make use of some zerorpc.Client instances, the initial
+                event context is transfered on every call.
+
+        A real use case is a distributed tracer. Each time a new event is
+        created, a trace_id is injected in it or copied from the current task
+        context. This permit passing the trace_id from a zerorpc.Server to
+        another via zerorpc.Client.
+
+        The simple rule to know if a task need to be wrapped is:
+            - if the new task will make any zerorpc call, it should be wrapped.
+    '''
+    context = context or Context.get_instance()
+    header = context.middleware_get_task_context()
+    def wrapped(*args, **kargs):
+        context.middleware_load_task_context(header)
+        return functor(*args, **kargs)
+    return wrapped

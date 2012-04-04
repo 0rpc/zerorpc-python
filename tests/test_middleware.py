@@ -25,6 +25,9 @@
 
 from nose.tools import assert_raises
 import gevent
+import gevent.local
+import random
+import md5
 
 from zerorpc import zmq
 import zerorpc
@@ -250,3 +253,274 @@ def test_call_procedure():
     #FIXME: These seems to be broken
     # publisher.close()
     # subscriber.close()
+
+
+class Tracer:
+    '''Used by test_task_context_* tests'''
+    def __init__(self, identity):
+        self._identity = identity
+        self._locals = gevent.local.local()
+        self._log = []
+
+    @property
+    def trace_id(self):
+        return self._locals.__dict__.get('trace_id', None)
+
+    def load_task_context(self, event_header):
+        self._locals.trace_id = event_header.get('trace_id', None)
+        print self._identity, 'load_task_context', self.trace_id
+        self._log.append(('load', self.trace_id))
+
+    def get_task_context(self):
+        if self.trace_id is None:
+            # just an ugly code to generate a beautiful little hash.
+            self._locals.trace_id = '<{0}>'.format(md5.md5(
+                    str(random.random())[3:]
+                    ).hexdigest()[0:6].upper())
+            print self._identity, 'get_task_context! [make a new one]', self.trace_id
+            self._log.append(('new', self.trace_id))
+        else:
+            print self._identity, 'get_task_context! [reuse]', self.trace_id
+            self._log.append(('reuse', self.trace_id))
+        return { 'trace_id': self.trace_id }
+
+
+def test_task_context():
+    endpoint = random_ipc_endpoint()
+    srv_ctx = zerorpc.Context()
+    cli_ctx = zerorpc.Context()
+
+    srv_tracer = Tracer('[server]')
+    srv_ctx.register_middleware(srv_tracer)
+    cli_tracer = Tracer('[client]')
+    cli_ctx.register_middleware(cli_tracer)
+
+    class Srv:
+        def echo(self, msg):
+            return msg
+
+        @zerorpc.stream
+        def stream(self):
+            yield 42
+
+    srv = zerorpc.Server(Srv(), context=srv_ctx)
+    srv.bind(endpoint)
+    srv_task = gevent.spawn(srv.run)
+
+    c = zerorpc.Client(context=cli_ctx)
+    c.connect(endpoint)
+
+    assert c.echo('hello') == 'hello'
+    for x in c.stream():
+        assert x == 42
+
+    srv.stop()
+    srv_task.join()
+
+    assert cli_tracer._log == [
+            ('new', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ]
+    assert srv_tracer._log == [
+            ('load', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ('load', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ]
+
+def test_task_context_relay():
+    endpoint1 = random_ipc_endpoint()
+    endpoint2 = random_ipc_endpoint()
+    srv_ctx = zerorpc.Context()
+    srv_relay_ctx = zerorpc.Context()
+    cli_ctx = zerorpc.Context()
+
+    srv_tracer = Tracer('[server]')
+    srv_ctx.register_middleware(srv_tracer)
+    srv_relay_tracer = Tracer('[server_relay]')
+    srv_relay_ctx.register_middleware(srv_relay_tracer)
+    cli_tracer = Tracer('[client]')
+    cli_ctx.register_middleware(cli_tracer)
+
+    class Srv:
+        def echo(self, msg):
+            return msg
+
+    srv = zerorpc.Server(Srv(), context=srv_ctx)
+    srv.bind(endpoint1)
+    srv_task = gevent.spawn(srv.run)
+
+    c_relay = zerorpc.Client(context=srv_relay_ctx)
+    c_relay.connect(endpoint1)
+
+    class SrvRelay:
+        def echo(self, msg):
+            return c_relay.echo('relay' + msg) + 'relayed'
+
+    srv_relay = zerorpc.Server(SrvRelay(), context=srv_relay_ctx)
+    srv_relay.bind(endpoint2)
+    srv_relay_task = gevent.spawn(srv_relay.run)
+
+    c = zerorpc.Client(context=cli_ctx)
+    c.connect(endpoint2)
+
+    assert c.echo('hello') == 'relayhellorelayed'
+
+    srv_relay.stop()
+    srv.stop()
+    srv_relay_task.join()
+    srv_task.join()
+
+    assert cli_tracer._log == [
+            ('new', cli_tracer.trace_id),
+            ]
+    assert srv_relay_tracer._log == [
+            ('load', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ]
+    assert srv_tracer._log == [
+            ('load', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ]
+
+def test_task_context_relay_fork():
+    endpoint1 = random_ipc_endpoint()
+    endpoint2 = random_ipc_endpoint()
+    srv_ctx = zerorpc.Context()
+    srv_relay_ctx = zerorpc.Context()
+    cli_ctx = zerorpc.Context()
+
+    srv_tracer = Tracer('[server]')
+    srv_ctx.register_middleware(srv_tracer)
+    srv_relay_tracer = Tracer('[server_relay]')
+    srv_relay_ctx.register_middleware(srv_relay_tracer)
+    cli_tracer = Tracer('[client]')
+    cli_ctx.register_middleware(cli_tracer)
+
+    class Srv:
+        def echo(self, msg):
+            return msg
+
+    srv = zerorpc.Server(Srv(), context=srv_ctx)
+    srv.bind(endpoint1)
+    srv_task = gevent.spawn(srv.run)
+
+    c_relay = zerorpc.Client(context=srv_relay_ctx)
+    c_relay.connect(endpoint1)
+
+    class SrvRelay:
+        def echo(self, msg):
+            def dothework(msg):
+                return c_relay.echo(msg) + 'relayed'
+            g = gevent.spawn(zerorpc.fork_task_context(dothework,
+                srv_relay_ctx), 'relay' + msg)
+            print 'relaying in separate task:', g
+            r = g.get()
+            print 'back to main task'
+            return r
+
+    srv_relay = zerorpc.Server(SrvRelay(), context=srv_relay_ctx)
+    srv_relay.bind(endpoint2)
+    srv_relay_task = gevent.spawn(srv_relay.run)
+
+    c = zerorpc.Client(context=cli_ctx)
+    c.connect(endpoint2)
+
+    assert c.echo('hello') == 'relayhellorelayed'
+
+    srv_relay.stop()
+    srv.stop()
+    srv_relay_task.join()
+    srv_task.join()
+
+    assert cli_tracer._log == [
+            ('new', cli_tracer.trace_id),
+            ]
+    assert srv_relay_tracer._log == [
+            ('load', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ('load', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ]
+    assert srv_tracer._log == [
+            ('load', cli_tracer.trace_id),
+            ('reuse', cli_tracer.trace_id),
+            ]
+
+
+def test_task_context_pushpull():
+    endpoint = random_ipc_endpoint()
+    puller_ctx = zerorpc.Context()
+    pusher_ctx = zerorpc.Context()
+
+    puller_tracer = Tracer('[puller]')
+    puller_ctx.register_middleware(puller_tracer)
+    pusher_tracer = Tracer('[pusher]')
+    pusher_ctx.register_middleware(pusher_tracer)
+
+    trigger = gevent.event.Event()
+
+    class Puller:
+        def echo(self, msg):
+            trigger.set()
+
+    puller = zerorpc.Puller(Puller(), context=puller_ctx)
+    puller.bind(endpoint)
+    puller_task = gevent.spawn(puller.run)
+
+    c = zerorpc.Pusher(context=pusher_ctx)
+    c.connect(endpoint)
+
+    trigger.clear()
+    c.echo('hello')
+    trigger.wait()
+
+    puller.stop()
+    puller_task.join()
+
+    assert pusher_tracer._log == [
+            ('new', pusher_tracer.trace_id),
+            ]
+    assert puller_tracer._log == [
+            ('load', pusher_tracer.trace_id),
+            ]
+
+
+def test_task_context_pubsub():
+    endpoint = random_ipc_endpoint()
+    subscriber_ctx = zerorpc.Context()
+    publisher_ctx = zerorpc.Context()
+
+    subscriber_tracer = Tracer('[subscriber]')
+    subscriber_ctx.register_middleware(subscriber_tracer)
+    publisher_tracer = Tracer('[publisher]')
+    publisher_ctx.register_middleware(publisher_tracer)
+
+    trigger = gevent.event.Event()
+
+    class Subscriber:
+        def echo(self, msg):
+            trigger.set()
+
+    subscriber = zerorpc.Subscriber(Subscriber(), context=subscriber_ctx)
+    subscriber.bind(endpoint)
+    subscriber_task = gevent.spawn(subscriber.run)
+
+    c = zerorpc.Publisher(context=publisher_ctx)
+    c.connect(endpoint)
+
+    trigger.clear()
+    c.echo('pub...')
+    trigger.wait()
+
+    subscriber.stop()
+    subscriber_task.join()
+
+    assert publisher_tracer._log == [
+            ('new', publisher_tracer.trace_id),
+            ]
+    assert subscriber_tracer._log == [
+            ('load', publisher_tracer.trace_id),
+            ]

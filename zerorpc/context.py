@@ -37,7 +37,9 @@ class Context(zmq.Context):
         self._middlewares_hooks = {
                 'resolve_endpoint': [],
                 'raise_error': [],
-                'call_procedure': []
+                'call_procedure': [],
+                'load_task_context': [],
+                'get_task_context': [],
                 }
 
     @staticmethod
@@ -86,3 +88,13 @@ class Context(zmq.Context):
         for functor in self._middlewares_hooks['call_procedure']:
             procedure = chain(functor, procedure)
         return procedure(*args, **kwargs)
+
+    def middleware_load_task_context(self, event_header):
+        for functor in self._middlewares_hooks['load_task_context']:
+            functor(event_header)
+
+    def middleware_get_task_context(self):
+        event_header = {}
+        for functor in self._middlewares_hooks['get_task_context']:
+            event_header.update(functor())
+        return event_header
