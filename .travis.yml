@@ -1,0 +1,7 @@
+language: python
+python:
+  - 2.7
+script: nosetests
+install:
+  - pip install nose --use-mirrors
+  - pip install . --use-mirrors
