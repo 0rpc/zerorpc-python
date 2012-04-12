@@ -345,11 +345,13 @@ class Server(SocketBase, ServerBase):
 class Client(SocketBase, ClientBase):
     patterns = [PatternReqStream(), PatternReqRep()]
 
-    def __init__(self, context=None, timeout=30, heartbeat=5,
+    def __init__(self, connect_to=None, context=None, timeout=30, heartbeat=5,
             passive_heartbeat=False):
         SocketBase.__init__(self, zmq.XREQ, context=context)
         ClientBase.__init__(self, self._events, Client.patterns, context,
                 timeout, heartbeat, passive_heartbeat)
+        if connect_to:
+            self.connect(connect_to)
 
     def close(self):
         ClientBase.close(self)
