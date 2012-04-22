@@ -30,6 +30,13 @@ except ImportError:
     from distutils.core import setup
 
 
+import os
+if os.environ.get('STATIC_DEPS', None) in ('1', 'true'):
+    PYZMQ_PACKAGE = 'pyzmq-static>=2.1.7,<2.2'
+else:
+    PYZMQ_PACKAGE = 'pyzmq>=2.1.11,<2.2'
+
+
 setup(
     name='zerorpc',
     version=__version__,
@@ -41,7 +48,7 @@ setup(
             'argparse',
             'gevent',
             'msgpack-python',
-            'pyzmq-static==2.1.7',
+            PYZMQ_PACKAGE,
     ],
     zip_safe=False,
     scripts=[
