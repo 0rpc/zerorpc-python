@@ -41,7 +41,7 @@ setup(
             'argparse',
             'gevent',
             'msgpack-python',
-            'pyzmq-static==2.1.7',
+            'pyzmq-static',
     ],
     zip_safe=False,
     scripts=[
