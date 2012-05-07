@@ -40,7 +40,7 @@ setup(
     install_requires=[
             'argparse',
             'gevent',
-            'msgpack-python',
+            'msgpack-python==0.1.12',
             'pyzmq-static==2.1.7',
     ],
     zip_safe=False,
