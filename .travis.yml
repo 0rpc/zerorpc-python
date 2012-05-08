@@ -1,7 +1,7 @@
 language: python
 python:
   - 2.7
-script: nosetests
+script: nosetests -v -e test_buffered_channel -e heartbeat -e reqstream -e test_server -e raise_error -e test_socket_on_channel
 before_install:
   - sudo apt-get update
   - sudo apt-get install python-dev libevent-dev
