@@ -41,8 +41,10 @@ setup(
             'argparse',
             'gevent',
             'msgpack-python==0.1.12',
-            'pyzmq-static==2.1.7',
+            'pyzmq-static>=2.1.7',
     ],
+    tests_require=['nose'],
+    test_suite='nose.collector',
     zip_safe=False,
     scripts=[
             'bin/zerorpc'
