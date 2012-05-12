@@ -113,6 +113,9 @@ class ServerBase(object):
             traceback.print_exception(exc_type, exc_value, exc_traceback,
                     file=sys.stderr)
 
+            self._context.middleware_inspect_error(exc_type, exc_value,
+                    exc_traceback)
+
             if protocol_v1:
                 return (repr(exc_value),)
 
