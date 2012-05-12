@@ -35,12 +35,13 @@ class Context(zmq.Context):
     def __init__(self):
         self._middlewares = []
         self._middlewares_hooks = {
-                'resolve_endpoint': [],
-                'raise_error': [],
-                'call_procedure': [],
-                'load_task_context': [],
-                'get_task_context': [],
-                }
+            'resolve_endpoint': [],
+            'raise_error': [],
+            'call_procedure': [],
+            'load_task_context': [],
+            'get_task_context': [],
+            'inspect_error': []
+        }
 
     @staticmethod
     def get_instance():
@@ -70,6 +71,12 @@ class Context(zmq.Context):
         for functor in self._middlewares_hooks['resolve_endpoint']:
             endpoint = functor(endpoint)
         return endpoint
+
+    def middleware_inspect_error(self, exc_type, exc_value, exc_traceback):
+        exc_info = exc_type, exc_value, exc_traceback
+        task_context = self.middleware_get_task_context()
+        for functor in self._middlewares_hooks['inspect_error']:
+            functor(task_context, exc_info)
 
     def middleware_raise_error(self, event):
         for functor in self._middlewares_hooks['raise_error']:

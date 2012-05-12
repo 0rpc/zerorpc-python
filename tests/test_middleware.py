@@ -524,3 +524,43 @@ def test_task_context_pubsub():
     assert subscriber_tracer._log == [
             ('load', publisher_tracer.trace_id),
             ]
+
+def test_inspect_error_middleware():
+
+    class InspectErrorMiddleware(Tracer):
+        def __init__(self):
+            self.called = False
+            Tracer.__init__(self, identity='[server]')
+
+        def inspect_error(self, task_context, exc_info):
+            assert 'trace_id' in task_context
+            exc_type, exc_value, exc_traceback = exc_info
+            self.called = True
+
+    class Srv(object):
+        def echo(self, msg):
+            raise RuntimeError(msg)
+
+    endpoint = random_ipc_endpoint()
+
+    middleware = InspectErrorMiddleware()
+    ctx = zerorpc.Context()
+    ctx.register_middleware(middleware)
+
+    module = Srv()
+    server = zerorpc.Server(module, context=ctx)
+    server.bind(endpoint)
+    gevent.spawn(server.run)
+
+    client = zerorpc.Client()
+    client.connect(endpoint)
+
+    try:
+        client.echo('This is a test which should call the InspectErrorMiddleware')
+    except zerorpc.exceptions.RemoteError as ex:
+        assert ex.name == 'RuntimeError'
+
+    client.close()
+    server.close()
+
+    assert middleware.called is True
