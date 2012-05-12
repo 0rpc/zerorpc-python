@@ -40,9 +40,11 @@ setup(
     install_requires=[
             'argparse',
             'gevent',
-            'msgpack-python',
-            'pyzmq-static==2.1.7',
+            'msgpack-python==0.1.12',
+            'pyzmq-static>=2.1.7',
     ],
+    tests_require=['nose'],
+    test_suite='nose.collector',
     zip_safe=False,
     scripts=[
             'bin/zerorpc'
