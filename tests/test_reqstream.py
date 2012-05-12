@@ -36,7 +36,7 @@ def test_rcp_streaming():
 
         @zerorpc.rep
         def range(self, max):
-            return xrange(max)
+            return range(max)
 
         @zerorpc.stream
         def xrange(self, max):
