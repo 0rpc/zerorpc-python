@@ -47,7 +47,7 @@ class Sender(object):
 
     def close(self):
         if self._send_task:
-            self._send_queue.kill()
+            self._send_task.kill()
 
     def _sender(self):
         running = True
