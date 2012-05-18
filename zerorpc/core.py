@@ -320,7 +320,14 @@ class Puller(SocketBase):
                     self._methods[event.name],
                     *event.args)
             except Exception:
-                traceback.print_exc(file=sys.stderr)
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                try:
+                    traceback.print_exception(exc_type, exc_value, exc_traceback,
+                            file=sys.stderr)
+                    self._context.middleware_inspect_error(exc_type, exc_value,
+                            exc_traceback)
+                finally:
+                    del exc_traceback
 
     def run(self):
         self._receiver_task = gevent.spawn(self._receiver)
