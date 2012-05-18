@@ -23,7 +23,6 @@
 # SOFTWARE.
 
 
-import inspect
 import sys
 import traceback
 import gevent.pool
@@ -38,7 +37,8 @@ from .channel import ChannelMultiplexer, BufferedChannel
 from .socket import SocketBase
 from .heartbeat import HeartBeatOnChannel
 from .context import Context
-
+from .decorators import DecoratorBase, rep
+import patterns
 
 class ServerBase(object):
 
@@ -171,12 +171,11 @@ class ServerBase(object):
 
 class ClientBase(object):
 
-    def __init__(self, channel, patterns, context=None, timeout=30, heartbeat=5,
+    def __init__(self, channel, context=None, timeout=30, heartbeat=5,
             passive_heartbeat=False):
         self._multiplexer = ChannelMultiplexer(channel,
                 ignore_broadcast=True)
         self._context = context or Context.get_instance()
-        self._patterns = patterns
         self._timeout = timeout
         self._heartbeat_freq = heartbeat
         self._passive_heartbeat = passive_heartbeat
@@ -195,7 +194,7 @@ class ClientBase(object):
             raise RemoteError('RemoteError', msg, None)
 
     def _select_pattern(self, event):
-        for pattern in self._patterns:
+        for pattern in patterns.patterns_list:
             if pattern.accept_answer(event):
                 return pattern
         msg = 'Unable to find a pattern for: {0}'.format(event)
@@ -211,7 +210,7 @@ class ClientBase(object):
 
             pattern = self._select_pattern(event)
             return pattern.process_answer(self._context, bufchan, event, method,
-                timeout, self._raise_remote_error)
+                    self._raise_remote_error)
         except:
             bufchan.close()
             bufchan.channel.close()
@@ -246,89 +245,6 @@ class ClientBase(object):
         return lambda *args, **kargs: self(method, *args, **kargs)
 
 
-class DecoratorBase(object):
-    pattern = None
-
-    def __init__(self, functor):
-        self._functor = functor
-        self.__doc__ = functor.__doc__
-        self.__name__ = functor.__name__
-
-    def __get__(self, instance, type_instance=None):
-        if instance is None:
-            return self
-        return self.__class__(self._functor.__get__(instance, type_instance))
-
-    def __call__(self, *args, **kargs):
-        return self._functor(*args, **kargs)
-
-    def _zerorpc_args(self):
-        try:
-            args_spec = self._functor._zerorpc_args()
-        except AttributeError:
-            try:
-                args_spec = inspect.getargspec(self._functor)
-            except TypeError:
-                try:
-                    args_spec = inspect.getargspec(self._functor.__call__)
-                except (AttributeError, TypeError):
-                    args_spec = None
-        return args_spec
-
-
-class PatternReqRep():
-
-    def process_call(self, context, bufchan, event, functor):
-        result = context.middleware_call_procedure(functor, *event.args)
-        bufchan.emit('OK', (result,), context.middleware_get_task_context())
-
-    def accept_answer(self, event):
-        return True
-
-    def process_answer(self, context, bufchan, event, method, timeout,
-            raise_remote_error):
-        result = event.args[0]
-        if event.name == 'ERR':
-            raise_remote_error(event)
-        bufchan.close()
-        bufchan.channel.close()
-        bufchan.channel.channel.close()
-        return result
-
-
-class rep(DecoratorBase):
-    pattern = PatternReqRep()
-
-
-class PatternReqStream():
-
-    def process_call(self, context, bufchan, event, functor):
-        xheader = context.middleware_get_task_context()
-        for result in iter(context.middleware_call_procedure(functor,
-                *event.args)):
-            bufchan.emit('STREAM', result, xheader)
-        bufchan.emit('STREAM_DONE', None, xheader)
-
-    def accept_answer(self, event):
-        return event.name in ('STREAM', 'STREAM_DONE')
-
-    def process_answer(self, context, bufchan, event, method, timeout,
-            raise_remote_error):
-        def iterator(event):
-            while event.name == 'STREAM':
-                yield event.args
-                event = bufchan.recv()
-            if event.name == 'ERR':
-                raise_remote_error(event)
-            bufchan.close()
-            bufchan.channel.channel.close()
-        return iterator(event)
-
-
-class stream(DecoratorBase):
-    pattern = PatternReqStream()
-
-
 class Server(SocketBase, ServerBase):
 
     def __init__(self, methods=None, name=None, context=None, pool_size=None,
@@ -346,13 +262,12 @@ class Server(SocketBase, ServerBase):
 
 
 class Client(SocketBase, ClientBase):
-    patterns = [PatternReqStream(), PatternReqRep()]
 
     def __init__(self, connect_to=None, context=None, timeout=30, heartbeat=5,
             passive_heartbeat=False):
         SocketBase.__init__(self, zmq.XREQ, context=context)
-        ClientBase.__init__(self, self._events, Client.patterns, context,
-                timeout, heartbeat, passive_heartbeat)
+        ClientBase.__init__(self, self._events, context, timeout, heartbeat,
+                passive_heartbeat)
         if connect_to:
             self.connect(connect_to)
 

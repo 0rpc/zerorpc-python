@@ -22,12 +22,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .version import *
-from .exceptions import *
-from .context import *
-from .socket import *
-from .channel import *
-from .events import *
-from .core import *
-from .heartbeat import *
-from .decorators import *
+import inspect
+
+from .patterns import *
+
+
+class DecoratorBase(object):
+    pattern = None
+
+    def __init__(self, functor):
+        self._functor = functor
+        self.__doc__ = functor.__doc__
+        self.__name__ = functor.__name__
+
+    def __get__(self, instance, type_instance=None):
+        if instance is None:
+            return self
+        return self.__class__(self._functor.__get__(instance, type_instance))
+
+    def __call__(self, *args, **kargs):
+        return self._functor(*args, **kargs)
+
+    def _zerorpc_args(self):
+        try:
+            args_spec = self._functor._zerorpc_args()
+        except AttributeError:
+            try:
+                args_spec = inspect.getargspec(self._functor)
+            except TypeError:
+                try:
+                    args_spec = inspect.getargspec(self._functor.__call__)
+                except (AttributeError, TypeError):
+                    args_spec = None
+        return args_spec
+
+
+class rep(DecoratorBase):
+    pattern = ReqRep()
+
+
+class stream(DecoratorBase):
+    pattern = ReqStream()
