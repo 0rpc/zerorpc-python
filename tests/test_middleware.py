@@ -564,3 +564,45 @@ def test_inspect_error_middleware():
     server.close()
 
     assert middleware.called is True
+
+def test_inspect_error_middleware_puller():
+
+    class InspectErrorMiddleware(Tracer):
+        def __init__(self, barrier):
+            self.called = False
+            self._barrier = barrier
+            Tracer.__init__(self, identity='[server]')
+
+        def inspect_error(self, task_context, exc_info):
+            assert 'trace_id' in task_context
+            exc_type, exc_value, exc_traceback = exc_info
+            self.called = True
+            self._barrier.set()
+
+    class Srv(object):
+        def echo(self, msg):
+            raise RuntimeError(msg)
+
+    endpoint = random_ipc_endpoint()
+
+    barrier = gevent.event.Event()
+    middleware = InspectErrorMiddleware(barrier)
+    ctx = zerorpc.Context()
+    ctx.register_middleware(middleware)
+
+    module = Srv()
+    server = zerorpc.Puller(module, context=ctx)
+    server.bind(endpoint)
+    gevent.spawn(server.run)
+
+    client = zerorpc.Pusher()
+    client.connect(endpoint)
+
+    barrier.clear()
+    client.echo('This is a test which should call the InspectErrorMiddleware')
+    barrier.wait()
+
+    client.close()
+    server.close()
+
+    assert middleware.called is True
