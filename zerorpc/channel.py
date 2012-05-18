@@ -102,6 +102,10 @@ class ChannelMultiplexer(object):
     def active_channels(self):
         return self._active_channels
 
+    @property
+    def context(self):
+        return self._events.context
+
 
 class Channel(object):
 
@@ -128,17 +132,20 @@ class Channel(object):
             del self._multiplexer._active_channels[self._channel_id]
             self._channel_id = None
 
-    def emit(self, name, args, xheader={}):
+    def create_event(self, name, args, xheader={}):
         event = self._multiplexer.create_event(name, args, xheader)
-
         if self._channel_id is None:
             self._channel_id = event.header['message_id']
             self._multiplexer._active_channels[self._channel_id] = self
         else:
             event.header['response_to'] = self._channel_id
+        return event
 
-# TODO debug middleware
-#        print time.time(), 'channel emit', event
+    def emit(self, name, args, xheader={}):
+        event = self.create_event(name, args, xheader)
+        self._multiplexer.emit_event(event, self._zmqid)
+
+    def emit_event(self, event):
         self._multiplexer.emit_event(event, self._zmqid)
 
     def recv(self, timeout=None):
@@ -146,9 +153,11 @@ class Channel(object):
             event = self._queue.get(timeout=timeout)
         except gevent.queue.Empty:
             raise TimeoutExpired(timeout)
-# TODO debug middleware
-#        print time.time(), 'channel recv', event
         return event
+
+    @property
+    def context(self):
+        return self._multiplexer.context
 
 
 class BufferedChannel(object):
@@ -193,7 +202,10 @@ class BufferedChannel(object):
             else:
                 self._input_queue.put(event)
 
-    def emit(self, name, args, xheader={}, block=True, timeout=None):
+    def create_event(self, name, args, xheader={}):
+        return self._channel.create_event(name, args, xheader)
+
+    def emit_event(self, event, block=True, timeout=None):
         if self._remote_queue_open_slots == 0:
             if not block:
                 return False
@@ -201,11 +213,15 @@ class BufferedChannel(object):
             self._remote_can_recv.wait(timeout=timeout)
         self._remote_queue_open_slots -= 1
         try:
-            self._channel.emit(name, args, xheader)
+            self._channel.emit_event(event)
         except:
             self._remote_queue_open_slots += 1
             raise
         return True
+
+    def emit(self, name, args, xheader={}, block=True, timeout=None):
+        event = self.create_event(name, args, xheader)
+        return self.emit_event(event, block, timeout)
 
     def _request_data(self):
         open_slots = self._input_queue_size - self._input_queue_reserved
@@ -230,3 +246,7 @@ class BufferedChannel(object):
     @property
     def channel(self):
         return self._channel
+
+    @property
+    def context(self):
+        return self._channel.context

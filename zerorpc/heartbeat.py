@@ -95,12 +95,19 @@ class HeartBeatOnChannel(object):
         return LostRemote('Lost remote after {0}s heartbeat'.format(
             self._heartbeat_freq * 2))
 
-    def emit(self, name, args, xheader={}):
-        if self._lost_remote:
-            raise self._lost_remote_exception()
+    def create_event(self, name, args, xheader={}):
         if self._compat_v2 and name == '_zpc_more':
             name = '_zpc_hb'
-        self._channel.emit(name, args, xheader)
+        return self._channel.create_event(name, args, xheader)
+
+    def emit_event(self, event):
+        if self._lost_remote:
+            raise self._lost_remote_exception()
+        self._channel.emit_event(event)
+
+    def emit(self, name, args, xheader={}):
+        event = self.create_event(name, args, xheader)
+        self.emit_event(event)
 
     def recv(self, timeout=None):
         if self._lost_remote:
@@ -116,3 +123,7 @@ class HeartBeatOnChannel(object):
     @property
     def channel(self):
         return self._channel
+
+    @property
+    def context(self):
+        return self._channel.context

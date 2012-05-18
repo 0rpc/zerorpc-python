@@ -113,7 +113,7 @@ class Event(object):
         self._name = name
         self._args = args
         if header is None:
-            context = context or Context.get_instance()
+            context = context
             self._header = {
                     'message_id': context.new_msgid(),
                     'v': 3
@@ -257,6 +257,10 @@ class Events(object):
     def setsockopt(self, *args):
         return self._socket.setsockopt(*args)
 
+    @property
+    def context(self):
+        return self._context
+
 
 class WrappedEvents(object):
 
@@ -271,18 +275,24 @@ class WrappedEvents(object):
         return self._channel.recv_is_available
 
     def create_event(self, name, args, xheader={}):
-        wrapped_event = Event(name, args, None)
-        wrapped_event.header.update(xheader)
-        return wrapped_event
+        event = Event(name, args, self._channel.context)
+        event.header.update(xheader)
+        return event
 
     def emit_event(self, event, identity=None):
-        return self._channel.emit('w', event.pack())
+        event_payload = (event.header, event.name, event.args)
+        wrapper_event = self._channel.create_event('w', event_payload)
+        self._channel.emit_event(wrapper_event)
 
     def emit(self, name, args, xheader={}):
-        wrapped_event = self.create_event(name, args, xheader)
-        return self._channel.emit('w', wrapped_event.pack())
+        wrapper_event = self.create_event(name, args, xheader)
+        self.emit_event(wrapper_event)
 
     def recv(self, timeout=None):
-        event = self._channel.recv()
-        wrapped_event = Event.unpack(event.args)
-        return wrapped_event
+        wrapper_event = self._channel.recv()
+        (header, name, args) = wrapper_event.args
+        return Event(name, args, None, header)
+
+    @property
+    def context(self):
+        return self._channel.context
