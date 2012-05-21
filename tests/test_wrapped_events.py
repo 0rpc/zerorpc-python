@@ -46,9 +46,9 @@ def test_sub_events():
 
     event = server.recv()
     print event
-    assert type(event.args) is str
+    assert type(event.args) is tuple
     assert event.name == 'w'
-    subevent = zerorpc.Event.unpack(event.args)
+    subevent = event.args
     print 'subevent:', subevent
     server_channel = server.channel(event)
     server_channel_events = zerorpc.WrappedEvents(server_channel)
@@ -82,9 +82,9 @@ def test_multiple_sub_events():
 
     event = server.recv()
     print event
-    assert type(event.args) is str
+    assert type(event.args) is tuple
     assert event.name == 'w'
-    subevent = zerorpc.Event.unpack(event.args)
+    subevent = event.args
     print 'subevent:', subevent
     server_channel = server.channel(event)
     server_channel_events = zerorpc.WrappedEvents(server_channel)
@@ -95,9 +95,9 @@ def test_multiple_sub_events():
 
     event = server.recv()
     print event
-    assert type(event.args) is str
+    assert type(event.args) is tuple
     assert event.name == 'w'
-    subevent = zerorpc.Event.unpack(event.args)
+    subevent = event.args
     print 'subevent:', subevent
     server_channel = server.channel(event)
     server_channel_events = zerorpc.WrappedEvents(server_channel)
