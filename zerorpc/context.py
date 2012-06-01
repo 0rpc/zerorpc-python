@@ -25,6 +25,7 @@
 
 import uuid
 import functools
+import random
 
 import gevent_zmq as zmq
 
@@ -42,6 +43,7 @@ class Context(zmq.Context):
             'get_task_context': [],
             'inspect_error': []
         }
+        self._reset_msgid()
 
     @staticmethod
     def get_instance():
@@ -49,8 +51,17 @@ class Context(zmq.Context):
             Context._instance = Context()
         return Context._instance
 
+    def _reset_msgid(self):
+        self._msg_id_base = str(uuid.uuid4())[8:]
+        self._msg_id_counter = random.randrange(0, 2**32)
+        self._msg_id_counter_stop = random.randrange(self._msg_id_counter, 2**32)
+
     def new_msgid(self):
-        return str(uuid.uuid4())
+        if (self._msg_id_counter >= self._msg_id_counter_stop):
+            self._reset_msgid()
+        else:
+            self._msg_id_counter = (self._msg_id_counter + 1) & 0xffffffff
+        return '{0:08x}{1}'.format(self._msg_id_counter, self._msg_id_base)
 
     def register_middleware(self, middleware_instance):
         registered_count = 0
