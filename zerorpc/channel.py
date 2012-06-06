@@ -181,8 +181,12 @@ class BufferedChannel(object):
         self.close()
 
     def close(self):
-        if self._recv_task:
+        if self._recv_task is not None:
             self._recv_task.kill()
+            self._recv_task = None
+        if self._channel is not None:
+            self._channel.close()
+            self._channel = None
 
     def _recver(self):
         while True:

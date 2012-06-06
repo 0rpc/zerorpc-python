@@ -55,14 +55,10 @@ def test_close_server_bufchan():
     gevent.sleep(3)
     print 'CLOSE SERVER SOCKET!!!'
     server_bufchan.close()
-    server_hbchan.close()
-    server_channel.close()
     with assert_raises(zerorpc.LostRemote):
         client_bufchan.recv()
     print 'CLIENT LOST SERVER :)'
     client_bufchan.close()
-    client_hbchan.close()
-    client_channel.close()
     server.close()
     client.close()
 
@@ -91,14 +87,10 @@ def test_close_client_bufchan():
     gevent.sleep(3)
     print 'CLOSE CLIENT SOCKET!!!'
     client_bufchan.close()
-    server_hbchan.close()
-    client_channel.close()
     with assert_raises(zerorpc.LostRemote):
         server_bufchan.recv()
     print 'SERVER LOST CLIENT :)'
     server_bufchan.close()
-    client_hbchan.close()
-    server_channel.close()
     server.close()
     client.close()
 
@@ -125,14 +117,10 @@ def test_heartbeat_can_open_channel_server_close():
     gevent.sleep(3)
     print 'CLOSE SERVER SOCKET!!!'
     server_bufchan.close()
-    server_hbchan.close()
-    server_channel.close()
     with assert_raises(zerorpc.LostRemote):
         client_bufchan.recv()
     print 'CLIENT LOST SERVER :)'
     client_bufchan.close()
-    client_hbchan.close()
-    client_channel.close()
     server.close()
     client.close()
 
@@ -159,15 +147,11 @@ def test_heartbeat_can_open_channel_client_close():
     gevent.sleep(3)
     print 'CLOSE CLIENT SOCKET!!!'
     client_bufchan.close()
-    server_hbchan.close()
-    client_channel.close()
     client.close()
     with assert_raises(zerorpc.LostRemote):
         server_bufchan.recv()
     print 'SERVER LOST CLIENT :)'
     server_bufchan.close()
-    client_hbchan.close()
-    server_channel.close()
     server.close()
 
 
@@ -197,8 +181,6 @@ def test_do_some_req_rep():
             assert event.name == 'OK'
             assert event.args == (x + x * x,)
         client_bufchan.close()
-        client_hbchan.close()
-        client_channel.close()
 
     client_task = gevent.spawn(client_do)
 
@@ -208,8 +190,6 @@ def test_do_some_req_rep():
             assert event.name == 'add'
             server_bufchan.emit('OK', (sum(event.args),))
         server_bufchan.close()
-        server_hbchan.close()
-        server_channel.close()
 
     server_task = gevent.spawn(server_do)
 
@@ -243,8 +223,6 @@ def test_do_some_req_rep_lost_server():
         with assert_raises(zerorpc.LostRemote):
             event = client_bufchan.recv()
         client_bufchan.close()
-        client_hbchan.close()
-        client_channel.close()
 
     client_task = gevent.spawn(client_do)
 
@@ -258,8 +236,6 @@ def test_do_some_req_rep_lost_server():
             assert event.name == 'add'
             server_bufchan.emit('OK', (sum(event.args),))
         server_bufchan.close()
-        server_hbchan.close()
-        server_channel.close()
 
     server_task = gevent.spawn(server_do)
 
@@ -290,7 +266,6 @@ def test_do_some_req_rep_lost_client():
             assert event.name == 'OK'
             assert event.args == (x + x * x,)
         client_bufchan.close()
-        client_channel.close()
 
     client_task = gevent.spawn(client_do)
 
@@ -308,7 +283,6 @@ def test_do_some_req_rep_lost_client():
         with assert_raises(zerorpc.LostRemote):
             event = server_bufchan.recv()
         server_bufchan.close()
-        server_channel.close()
 
     server_task = gevent.spawn(server_do)
 
@@ -340,7 +314,6 @@ def test_do_some_req_rep_client_timeout():
                 assert event.name == 'OK'
                 assert event.args == (x,)
         client_bufchan.close()
-        client_channel.close()
 
     client_task = gevent.spawn(client_do)
 
@@ -357,7 +330,6 @@ def test_do_some_req_rep_client_timeout():
                 gevent.sleep(event.args[0])
                 server_bufchan.emit('OK', event.args)
         server_bufchan.close()
-        server_channel.close()
 
     server_task = gevent.spawn(server_do)
 
@@ -416,9 +388,7 @@ def test_congestion_control_server_pushing():
     server_task.get()
     client_task.get()
     client_bufchan.close()
-    client_hbchan.close()
     client.close()
     server_task.get()
     server_bufchan.close()
-    server_hbchan.close()
     server.close()

@@ -56,10 +56,15 @@ class HeartBeatOnChannel(object):
         self.close()
 
     def close(self):
-        if self._heartbeat_task:
+        if self._heartbeat_task is not None:
             self._heartbeat_task.kill()
-        if self._recv_task:
+            self._heartbeat_task = None
+        if self._recv_task is not None:
             self._recv_task.kill()
+            self._recv_task = None
+        if self._channel is not None:
+            self._channel.close()
+            self._channel = None
 
     def _heartbeat(self):
         while True:

@@ -114,4 +114,4 @@ def test_events_channel_both_side():
     server_events.close()
     server_channel.close()
     client_channel.close()
-    client_channel.close()
+    client_events.close()

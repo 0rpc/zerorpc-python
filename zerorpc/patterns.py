@@ -24,7 +24,7 @@
 
 
 
-class ReqRep():
+class ReqRep:
 
     def process_call(self, context, bufchan, event, functor):
         result = context.middleware_call_procedure(functor, *event.args)
@@ -39,12 +39,10 @@ class ReqRep():
         if event.name == 'ERR':
             raise_remote_error(event)
         bufchan.close()
-        bufchan.channel.close()
-        bufchan.channel.channel.close()
         return result
 
 
-class ReqStream():
+class ReqStream:
 
     def process_call(self, context, bufchan, event, functor):
         xheader = context.middleware_get_task_context()
@@ -65,7 +63,7 @@ class ReqStream():
             if event.name == 'ERR':
                 raise_remote_error(event)
             bufchan.close()
-            bufchan.channel.channel.close()
         return iterator(event)
+
 
 patterns_list = [ReqStream(), ReqRep()]

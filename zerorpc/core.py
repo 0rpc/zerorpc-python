@@ -147,8 +147,6 @@ class ServerBase(object):
                     self._context.middleware_get_task_context())
         finally:
             bufchan.close()
-            bufchan.channel.close()
-            bufchan.channel.channel.close()
 
     def _acceptor(self):
         while True:
@@ -213,8 +211,6 @@ class ClientBase(object):
                     self._raise_remote_error)
         except:
             bufchan.close()
-            bufchan.channel.close()
-            bufchan.channel.channel.close()
             raise
 
     def __call__(self, method, *args, **kargs):
@@ -237,8 +233,6 @@ class ClientBase(object):
             return async_result
         except:
             bufchan.close()
-            bufchan.channel.close()
-            bufchan.channel.channel.close()
             raise
 
     def __getattr__(self, method):
