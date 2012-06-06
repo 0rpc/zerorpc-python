@@ -93,3 +93,102 @@ def test_client_server_passive_hearbeat():
 
     assert client.slow() == 2
     print 'GOT ANSWER'
+
+
+def test_client_hb_doesnt_linger_on_streaming():
+    endpoint = random_ipc_endpoint()
+
+    class MySrv(zerorpc.Server):
+
+        @zerorpc.stream
+        def iter(self):
+            return xrange(42)
+
+    srv = MySrv(heartbeat=1, context=zerorpc.Context())
+    srv.bind(endpoint)
+    gevent.spawn(srv.run)
+
+    client1 = zerorpc.Client(endpoint, heartbeat=1, context=zerorpc.Context())
+
+    def test_client():
+        assert list(client1.iter()) == list(xrange(42))
+        print 'sleep 3s'
+        gevent.sleep(3)
+
+    gevent.spawn(test_client).join()
+
+
+def est_client_drop_few():
+    endpoint = random_ipc_endpoint()
+
+    class MySrv(zerorpc.Server):
+
+        def lolita(self):
+            return 42
+
+    srv = MySrv(heartbeat=1, context=zerorpc.Context())
+    srv.bind(endpoint)
+    gevent.spawn(srv.run)
+
+    client1 = zerorpc.Client(endpoint, heartbeat=1, context=zerorpc.Context())
+    client2 = zerorpc.Client(endpoint, heartbeat=1, context=zerorpc.Context())
+    client3 = zerorpc.Client(endpoint, heartbeat=1, context=zerorpc.Context())
+
+    assert client1.lolita() == 42
+    assert client2.lolita() == 42
+
+    gevent.sleep(3)
+    assert client3.lolita() == 42
+
+
+def test_client_drop_empty_stream():
+    endpoint = random_ipc_endpoint()
+
+    class MySrv(zerorpc.Server):
+
+        @zerorpc.stream
+        def iter(self):
+            return []
+
+    srv = MySrv(heartbeat=1, context=zerorpc.Context())
+    srv.bind(endpoint)
+    gevent.spawn(srv.run)
+
+    client1 = zerorpc.Client(endpoint, heartbeat=1, context=zerorpc.Context())
+
+    def test_client():
+        print 'grab iter'
+        i = client1.iter()
+
+        print 'sleep 3s'
+        gevent.sleep(3)
+
+    gevent.spawn(test_client).join()
+
+
+def test_client_drop_stream():
+    endpoint = random_ipc_endpoint()
+
+    class MySrv(zerorpc.Server):
+
+        @zerorpc.stream
+        def iter(self):
+            return xrange(500)
+
+    srv = MySrv(heartbeat=1, context=zerorpc.Context())
+    srv.bind(endpoint)
+    gevent.spawn(srv.run)
+
+    client1 = zerorpc.Client(endpoint, heartbeat=1, context=zerorpc.Context())
+
+    def test_client():
+        print 'grab iter'
+        i = client1.iter()
+
+        print 'consume some'
+        assert list(next(i) for x in xrange(142)) == list(xrange(142))
+
+        print 'sleep 3s'
+        gevent.sleep(3)
+
+    gevent.spawn(test_client).join()

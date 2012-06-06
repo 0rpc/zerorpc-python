@@ -56,6 +56,11 @@ class ReqStream:
 
     def process_answer(self, context, bufchan, event, method,
             raise_remote_error):
+
+        def is_stream_done(event):
+            return event.name == 'STREAM_DONE'
+        bufchan.on_close_if = is_stream_done
+
         def iterator(event):
             while event.name == 'STREAM':
                 yield event.args
@@ -63,6 +68,7 @@ class ReqStream:
             if event.name == 'ERR':
                 raise_remote_error(event)
             bufchan.close()
+
         return iterator(event)
 
 

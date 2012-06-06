@@ -171,11 +171,20 @@ class BufferedChannel(object):
         self._input_queue = gevent.queue.Queue()
         self._lost_remote = False
         self._verbose = False
+        self._on_close_if = None
         self._recv_task = gevent.spawn(self._recver)
 
     @property
     def recv_is_available(self):
         return self._channel.recv_is_available
+
+    @property
+    def on_close_if(self):
+        return self._on_close_if
+
+    @on_close_if.setter
+    def on_close_if(self, cb):
+        self._on_close_if = cb
 
     def __del__(self):
         self.close()
@@ -205,6 +214,10 @@ class BufferedChannel(object):
                         'BufferedChannel, queue overflow on event:', event)
             else:
                 self._input_queue.put(event)
+                if self._on_close_if is not None and self._on_close_if(event):
+                    self._recv_task = None
+                    self.close()
+                    return
 
     def create_event(self, name, args, xheader={}):
         return self._channel.create_event(name, args, xheader)
