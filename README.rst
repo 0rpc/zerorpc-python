@@ -4,6 +4,9 @@ zerorpc
 .. image:: https://secure.travis-ci.org/dotcloud/zerorpc-python.png
    :target: http://travis-ci.org/dotcloud/zerorpc-python
 
+Mailing list: zerorpc@googlegroups.com (https://groups.google.com/d/forum/zerorpc)
+
+
 zerorpc is a flexible RPC implementation based on zeromq and messagepack. 
 Service APIs exposed with zerorpc are called "zeroservices".
 
