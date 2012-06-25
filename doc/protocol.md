@@ -133,7 +133,7 @@ Both sides have a buffer for incoming messages on a channel.
 
 WIP
 
-## Pattern layer
+## RPC layer
 
 WIP
 
