@@ -78,7 +78,7 @@ All events' header must contain an unique message id and the protocol version:
 
 	{
 		"message_id": "6ce9503a-bfb8-486a-ac79-e2ed225ace79",
-		v: 3
+		"v": 3
 	}
 
 The message id should be unique for the lifetime of the connection between a
