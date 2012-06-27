@@ -2,79 +2,94 @@
 
 THIS DOCUMENT IS INCOMPLETE, WORK IN PROGRESS!
 
-This document attempt to define zerorpc's protocol. We will see how the protocol
-can be divided in different layers.
+This document attempts to define the ZeroRPC protocol.
 
-Note that many part of the protocol are either not elegant, could be more
-efficient, or just "curious". This is because zerorpc started as a little tool
-to solve a little problem. Before anybody knew, it was the core of all
-inter-services communications at dotCloud (<http://www.dotcloud.com>).
+## Introduction & History
 
-Keep in mind that ZeroRPC keeps evolving, as we use it to solve new problems
-everyday. There is no doubt that all discrepancy in the protocol will
-disappear (slowly) over time, but backward compatibly is a bitch ;) 
+A short warning: we know that some parts of the protocol are not very elegant.
+Some things can certainly be optimized. You will certainly think that some
+parts are... weird. This is because ZeroRPC started as a simple tool to
+solve a simple problem. And progressively, it became the core of all
+inter-services communications at dotCloud (<http://www.dotcloud.com>),
+and was refined, improved, enriched, to satisfy the needs of the dotCloud
+platform.
+
+Keep in mind that ZeroRPC keeps evolving: we add new features to solve
+the new problems that we meet every day.
+
+Of course, we want to weed out the discrepancies and "weird" behaviors
+of the protocol; but we also need to keep some backward compability,
+and that's painful indeed.
 
 > The python implementation of zerorpc act as a reference for the whole
 > protocol.  New features and experiments are implemented and tested in this
 > version first.  This is also this implementation that is powering dotCloud's
 > infrastructure.
 
+## Layers
+
 Before diving into any details, let's divide ZeroRPC's protocol in three
 different layers:
 
- - wire (or transport) layer, a combination of ZMQ <http://www.zeromq.org/>
-   and msgpack <http://msgpack.org/>.
- - event (or message) layer, the complex part handling heartbeat, multiplexing
-   and the notion of events. 
- - "RPC" layer, where you can find the notion of request/response for example.
+ 1. Wire (or transport) layer; a combination of ZMQ <http://www.zeromq.org/>
+    and msgpack <http://msgpack.org/>.
+ 2. Event (or message) layer; this is probably the most complex part, since
+    it handles heartbeat, multiplexing, and events.
+ 3. RPC layer; that's where you can find the notion of request and response.
 
 ## Wire layer
 
 The wire layer is a combination of ZMQ and msgpack.
 
-Here's the basics:
+The basics:
 
- - A zerorpc Server can listen on many ZMQ socket as wished.
- - A zerorpc Client can connect on many zerorpc Server as needed, but should
-   create a new ZMQ socket for each connection. It is assumed that every servers
-   share the same API.  
+ - A ZeroRPC server can listen on as many ZMQ sockets as you like. Actually,
+   a ZMQ socket can bind to multiple addresses. It can even *connect* to the
+   clients (think about it as a worker connecting to a hub), but there are
+   some limitations in that case (see below). ZeroRPC doesn't
+   have to do anything specific for that: ZMQ handles it automatically.
+ - A ZeroRPC client can connect to multiple ZeroRPC servers. However, it should
+   create a new ZMQ socket for each connection.
 
-Because zerorpc make use of heartbeat and other streaming-like features, all of
-that multiplexed on top of one ZMQ socket, we can't use any of the
-load-balancing features of ZMQ (ZMQ let choose between round-robin balancing or
-routing, but not both). It also mean that a zerorpc Client can't listen either,
-it need to connect to the server, not the opposite (but really, it shouldn't
-affect you too much).
+Since ZeroRPC implements heartbeat and streaming, it expects a kind of
+persistent, end-to-end, connection between the client and the server.
+It means that we cannot use the load-balancing features built into ZMQ.
+Otherwise, the various messages composing a single conversation could
+end up in different places.
 
-In short: Each connection from one zerorpc Client require its own ZMQ socket.
+That's why there are limitations when the server connects to the client:
+if there are multiple servers connecting to the same client, bad things
+will happen.
 
-> Note that the current implementation of zerorpc for python doesn't implement
-> its own load-balancing (yet), and still use one ZMQ socket for connecting to
+> Note that the current implementation of ZeroRPC for Python doesn't implement
+> its own load-balancing (yet), and still uses one ZMQ socket for connecting to
 > many servers. You can still use ZMQ load-balancing if you accept to disable
-> heartbeat and forget using any streaming responses.
+> heartbeat and don't use streamed responses.
 
 Every event from the event layer will be serialized with msgpack. 
 
+
 ## Event layer
 
-The event layer is the most complex of all three layers. (And it is where lie
-the majority of the code for the python implementation).
+The event layer is the most complex of all three layers. The majority of the
+code for the Python implementation deals with this layer.
 
-This layer provide:
+This layer provides:
 
- - The basics events mechanics.
- - A multiplexed channels system, to allow concurrency.
+ - basic events;
+ - multiplexed channels, allowing concurrency.
 
-### Event mechanics
 
-An event is a tuple (or array in json), containing in the following order:
+### Basic Events
 
- 1. the event's header -> dictionary (or object in json)
+An event is a tuple (or array in JSON), containing in the following order:
+
+ 1. the event's header -> dictionary (or object in JSON)
  2. the event's names -> string
- 3. the event's arguments -> Can be any valid json, but in practice, its often a
-	tuple, even empty, for some odd backward compability reasons. 
+ 3. the event's arguments -> any kind of value; but in practice, for backward
+    compatibility, it is recommended that this is a tuple (an empty one is OK).
 
-All events' header must contain an unique message id and the protocol version:
+All events headers must contain an unique message id and the protocol version:
 
 	{
 		"message_id": "6ce9503a-bfb8-486a-ac79-e2ed225ace79",
@@ -84,100 +99,133 @@ All events' header must contain an unique message id and the protocol version:
 The message id should be unique for the lifetime of the connection between a
 client and a server.
 
-> It doest need to be an UUID, but again for some backward compatibility reason
-> at dotCloud, we are keeping it UUID style, even if we technically don't
-> generate an UUID for every new events anymore, but only a part of it to keep
-> it fast.
+> It doesn't need to be an UUID, but again, for backward compatibility reasons,
+> it is better if it follows the UUID format.
 
-This document talk only about the version 3 of the protocol.
+This document talks only about the version 3 of the protocol.
 
-> The python's implementation has lots of weird pieces of code to handle all
-> three versions of the protocol running at dotCloud.
+> The Python implementation has a lot of backward compatibility code, to handle
+> communication between all three versions of the protocol.
 
-### Multiplexed channels
 
- - Every new events open a new channel implicitly.
+### Multiplexed Channels
+
+ - Each new event opens a new channel implicitly.
  - The id of the new event will represent the channel id for the connection.
- - Every consecutive events on a channel will have the header field "reply_to"
+ - Each consecutive event on a channel will have the header field "reply_to"
    set to the channel id:
 
 		{
 			"message_id": "6ce9503a-bfb8-486a-ac79-e2ed225ace79",
-			"reply_to":	6636fb60-2bca-4ecb-8cb4-bbaaf174e9e6
+			"reply_to": "6636fb60-2bca-4ecb-8cb4-bbaaf174e9e6"
 		}
 
 #### Heartbeat
 
-There is one active heartbeat for every active channel.
+Each part of a channel must send a heartbeat at regular intervals.
 
-> At some point it will be changed to a saner one heartbeat per connection only:
-> backward compatibility says hi again.
+The default heartbeat frequency is 5 seconds.
+
+> Note that technically, the heartbeat could be sitting on the connection level
+> instead of the channel level; but again, backward compatibility requires
+> to run it per channel at this point.
+
+The heartbeat is defined as follow:
 
  - Event's name: '\_zpc\_hb'
  - Event's args: null
 
-Default heartbeat frequency: 5 seconds.
+When no heartbeat even is received after 2 heartbeat intervals (so, 10s by default),
+we consider that the remote is lost.
 
-The remote part of a channel is considered lost when no heartbeat event is
-received after twice the heartbeat frequency (so 10s by default).
-
-> The python implementation raise the exception LostRemote, and even
-> manage to cancel a long-running task on a LostRemote).
+> The Python implementation raises the LostRemote exception, and even
+> manages to cancel a long-running task on a LostRemote. FIXME what does that mean?
 
 #### Buffering (or congestion control) on channels
 
-Both sides have a buffer for incoming messages on a channel.
+Both sides have a buffer for incoming messages on a channel. A peer can
+send an advisory message to the other end of the channel, to inform it of the
+size of its local buffer. This is a hint for the remote, to tell it "send me
+more data!"
 
  - Event's name: '\_zpc\_more'
  - Event's args: integer representing how many entries are available in the client's buffer. 
 
-WIP
+FIXME WIP
 
-## RPC layer
+## RPC Layer
 
-WIP
+In the first version of ZeroRPC, this was the main (and only) layer.
+Three kinds of events can occur at this layer: request (=function call),
+response (=function return), error (=exception). 
 
 Request:
  
  - Event's name: string with the name of the method to call.
  - Event's args: tuple of arguments for the method.
 
+Note: keyword arguments are not supported, because some languages don't
+support them. If you absolutely want to call functions with keyword
+arguments, you can use a wrapper; e.g. expose a function like
+"call_with_kwargs(function_name, args, kwargs)", where args is a list,
+and kwargs a dict. It might be an interesting idea to add such a
+helper function into ZeroRPC default methods (see below for definitions
+of existing default methods).
+
 Response:
 
  - Event's name: string "OK"
  - Event's args: tuple containing the returned value
  
-> Note that if the method return a tuple, it is still wrapped inside a tuple
-> to contain the returned tuple (backward compatibility man!).
+> Note that if the return value is a tuple, it is itself wrapped inside a
+> tuple - again, for backward compatibility reasons.
 
-In case of any fatal errors (an exception or the method's name requested can't
-be found):
+FIXME - is [] equivalent to [null]?
+
+If an error occurs (either at the transport level, or if an uncaught
+exception is raised), we use the ERR event.
 
  - Event's name: string "ERR"
  - Event's args: tuple of 3 strings:
- 	- Name of the error (Exception's class, or a meanfull word for example).
-	- Human representation of the error (prefer english please).
+ 	- Name of the error (it should be the exception class name, or another
+	  meaningful keyword).
+	- Human representation of the error (preferably in english).
 	- If possible a pretty printed traceback of the call stack when the error occured.
 
-### Default methods
+> A future version of the protocol will probably add a structured version of the
+> traceback, allowing machine-to-machine stack walking and better cross-language
+> exception representation.
 
-WIP
 
- - \_zerorpc\_ping
- - \_zerorpc\_inspect
+### Default calls
 
-### Request/Stream
+When exposing some code with ZeroRPC, a number of methods/functions are
+automatically added, to provide useful debugging and development tools.
 
-Response:
+ - \_zerorpc\_ping() just answers with a pong message.
+ - \_zerorpc\_inspect() returns all the available calls, with their
+   signature and documentation.
+
+FIXME we should rather standardize about the basic introspection calls.
+
+
+### Streaming
+
+At the protocol level, streaming is straightforward. When a server wants
+to stream some data, instead of sending a "OK" message, it sends a "STREAM"
+message. The client will know that it needs to keep waiting for more.
+At the end of the sream, a "STREAM_DONE" message is expected.
+
+Formal definitions follow.
+
+Messages part of a stream:
 
  - Event's name: string "STREAM"
  - Event's args: tuple containing the streamed value
  
-When the STREAM reach it's end:
+When the STREAM reaches its end:
 
  - Event's name: string "STREAM\_DONE"
  - Event's args: null
 
-> The python's implementation represent a stream by an iterator on both sides.
-
--- END OF DOCUMENT --
+> The Python implementation represents a stream by an iterator on both sides.
