@@ -50,10 +50,10 @@ class ServerBase(object):
             methods = self
 
         self._context = context or Context.get_instance()
-        self._name = name or repr(methods)
+        self._name = name or self._extract_name()
         self._task_pool = gevent.pool.Pool(size=pool_size)
         self._acceptor_task = None
-        self._methods = self._zerorpc_filter_methods(ServerBase, self, methods)
+        self._methods = self._filter_methods(ServerBase, self, methods)
 
         self._inject_builtins()
         self._heartbeat_freq = heartbeat
@@ -63,7 +63,7 @@ class ServerBase(object):
                 self._methods[k] = rep(functor)
 
     @staticmethod
-    def _zerorpc_filter_methods(cls, self, methods):
+    def _filter_methods(cls, self, methods):
         if hasattr(methods, '__getitem__'):
             return methods
         server_methods = set(getattr(self, k) for k in dir(cls) if not
@@ -75,20 +75,29 @@ class ServerBase(object):
                 and getattr(methods, k) not in server_methods
                 )
 
+    @staticmethod
+    def _extract_name(methods):
+        return getattr(type(methods), '__name__', None) or repr(methods)
+
     def close(self):
         self.stop()
         self._multiplexer.close()
 
-    def _zerorpc_inspect(self, method=None, long_doc=True):
-        if method:
-            methods = {method: self._methods[method]}
-        else:
-            methods = dict((m, f) for m, f in self._methods.items()
+
+    def _format_args_spec(self, args_spec):
+        r = [dict(name=name) for name in args_spec[0]]
+        default_values = args_spec[3]
+        if default_values is not None:
+            for arg, def_val in zip(reversed(r), reversed(default_values)):
+                arg['default'] = def_val
+        return r
+
+    def _zerorpc_inspect(self):
+        methods = dict((m, f) for m, f in self._methods.items()
                     if not m.startswith('_'))
-        detailled_methods = [(m, f._zerorpc_args(),
-            f.__doc__ if long_doc else
-            f.__doc__.split('\n', 1)[0] if f.__doc__ else None)
-                for (m, f) in methods.items()]
+        detailled_methods = dict((m,
+            dict(args=self._format_args_spec(f._zerorpc_args()),
+                doc=f._zerorpc_doc())) for (m, f) in methods.items())
         return {'name': self._name,
                 'methods': detailled_methods}
 
@@ -97,7 +106,8 @@ class ServerBase(object):
                 if not m.startswith('_')]
         self._methods['_zerorpc_name'] = lambda: self._name
         self._methods['_zerorpc_ping'] = lambda: ['pong', self._name]
-        self._methods['_zerorpc_help'] = lambda m: self._methods[m].__doc__
+        self._methods['_zerorpc_help'] = lambda m: \
+                self._methods[m]._zerorpc_doc()
         self._methods['_zerorpc_args'] = \
             lambda m: self._methods[m]._zerorpc_args()
         self._methods['_zerorpc_inspect'] = self._zerorpc_inspect
@@ -244,9 +254,12 @@ class Server(SocketBase, ServerBase):
     def __init__(self, methods=None, name=None, context=None, pool_size=None,
             heartbeat=5):
         SocketBase.__init__(self, zmq.XREP, context)
+
         if methods is None:
             methods = self
-        methods = ServerBase._zerorpc_filter_methods(Server, self, methods)
+
+        name = name or ServerBase._extract_name(methods)
+        methods = ServerBase._filter_methods(Server, self, methods)
         ServerBase.__init__(self, self._events, methods, name, context,
                 pool_size, heartbeat)
 
@@ -291,7 +304,7 @@ class Puller(SocketBase):
         if methods is None:
             methods = self
 
-        self._methods = ServerBase._zerorpc_filter_methods(Puller, self, methods)
+        self._methods = ServerBase._filter_methods(Puller, self, methods)
         self._receiver_task = None
 
     def close(self):

@@ -43,6 +43,11 @@ class DecoratorBase(object):
     def __call__(self, *args, **kargs):
         return self._functor(*args, **kargs)
 
+    def _zerorpc_doc(self):
+        if self.__doc__ is None:
+            return None
+        return inspect.cleandoc(self.__doc__)
+
     def _zerorpc_args(self):
         try:
             args_spec = self._functor._zerorpc_args()
