@@ -6,7 +6,7 @@ This document attempts to define the ZeroRPC protocol.
 
 ## Introduction & History
 
-ZeroRPC is a modern communication layer for distributed systems built on top of ZeroMQ, developed by dotCloud since 2010 and open-sourced in 2012. It features a dead-simple API for exposing any object or module over the network, and a powerful gevent implementation which supports multiple ZMQ socket types, streaming, heartbeats and more. It also includes a simple command-line tool for interactive querying and introspection. The platform team at dotCloud uses it in production to transmit millions of messages per day across hundreds of services.
+[ZeroRPC](http://zerorpc.dotcloud.com) is a modern communication layer for distributed systems built on top of [ZeroMQ](http://zeromq.org), developed at [dotCloud](http://dotcloud.com) since 2010 and open-sourced in 2012. It features a dead-simple API for exposing any object or module over the network, and a powerful gevent implementation which supports multiple ZMQ socket types, streaming, heartbeats and more. It also includes a simple command-line tool for interactive querying and introspection. The platform team at dotCloud uses it in production to transmit millions of messages per day across hundreds of services.
 
 ZeroRPC uses ZMQ as a transport, but uses a communication protocol that is transport-agnostic. For a long time the reference documentation for that protocol was the python code itself. However since its recent surge in popularity many people have expressed interest in porting it to other programming languages. We hope that this standalone protocol documentation will help them.
 
