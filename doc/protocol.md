@@ -6,20 +6,11 @@ This document attempts to define the ZeroRPC protocol.
 
 ## Introduction & History
 
-A short warning: we know that some parts of the protocol are not very elegant.
-Some things can certainly be optimized. You will certainly think that some
-parts are... weird. This is because ZeroRPC started as a simple tool to
-solve a simple problem. And progressively, it became the core of all
-inter-services communications at dotCloud (<http://www.dotcloud.com>),
-and was refined, improved, enriched, to satisfy the needs of the dotCloud
-platform.
+ZeroRPC is a modern communication layer for distributed systems built on top of ZeroMQ, developed by dotCloud since 2010 and open-sourced in 2012. It features a dead-simple API for exposing any object or module over the network, and a powerful gevent implementation which supports multiple ZMQ socket types, streaming, heartbeats and more. It also includes a simple command-line tool for interactive querying and introspection. The platform team at dotCloud uses it in production to transmit millions of messages per day across hundreds of services.
 
-Keep in mind that ZeroRPC keeps evolving: we add new features to solve
-the new problems that we meet every day.
+ZeroRPC uses ZMQ as a transport, but uses a communication protocol that is transport-agnostic. For a long time the reference documentation for that protocol was the python code itself. However since its recent surge in popularity many people have expressed interest in porting it to other programming languages. We hope that this standalone protocol documentation will help them.
 
-Of course, we want to weed out the discrepancies and "weird" behaviors
-of the protocol; but we also need to keep some backward compability,
-and that's painful indeed.
+A short warning: ZeroRPC started as a simple tool to solve a simple problem. It was progressively refined and improved to satisfy the growing needs of the dotCloud platform. The emphasis is on practicality, robustness and operational simplicity - sometimes at the expense of formal elegance and optimizations. We will gladly welcome patches focused on the latter so long as they don't hurt the former.
 
 > The python implementation of zerorpc act as a reference for the whole
 > protocol.  New features and experiments are implemented and tested in this
