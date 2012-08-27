@@ -23,6 +23,7 @@
 # SOFTWARE.
 
 
+import pickle
 import sys
 import traceback
 import gevent.pool
@@ -54,6 +55,7 @@ class ServerBase(object):
         self._task_pool = gevent.pool.Pool(size=pool_size)
         self._acceptor_task = None
         self._methods = self._filter_methods(ServerBase, self, methods)
+        self._default_debug_context = self._methods.values()[0].func_globals
 
         self._inject_builtins()
         self._heartbeat_freq = heartbeat
@@ -101,6 +103,21 @@ class ServerBase(object):
         return {'name': self._name,
                 'methods': detailled_methods}
 
+    def _zerorpc_debug(self, action, s, debug_call_name=None):
+        if debug_call_name is None:
+            debug_context = self._default_debug_context
+        else:
+            debug_context = self._methods[debug_call_name]._debug_context
+        if action == 'eval':
+            return eval(s, debug_context)
+        if action == 'exec':
+            exec s in debug_context
+            return
+        if action == 'pickle':
+            return pickle.dumps(eval(s, debug_context))
+        raise NotImplemented('Debug action {0} is not implemented.'
+                             .format(action))
+
     def _inject_builtins(self):
         self._methods['_zerorpc_list'] = lambda: [m for m in self._methods
                 if not m.startswith('_')]
@@ -111,6 +128,7 @@ class ServerBase(object):
         self._methods['_zerorpc_args'] = \
             lambda m: self._methods[m]._zerorpc_args()
         self._methods['_zerorpc_inspect'] = self._zerorpc_inspect
+        self._methods['_zerorpc_debug'] = self._zerorpc_debug
 
     def __call__(self, method, *args):
         if method not in self._methods:
