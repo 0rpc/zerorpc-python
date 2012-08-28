@@ -31,6 +31,7 @@ class DecoratorBase(object):
     pattern = None
 
     def __init__(self, functor):
+        self._debug_context = functor.func_globals
         self._functor = functor
         self.__doc__ = functor.__doc__
         self.__name__ = functor.__name__
