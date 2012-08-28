@@ -197,3 +197,25 @@ Now, in another terminal, let's try connecting to our awesome zeroservice::
 Congratulations! You have just made the World a little cooler with your first
 zeroservice, man!
 
+
+Debugging a remote service
+--------------------------
+
+If you want to inspect the global or local variables of your remote service,
+you can do it -- without having to add your own debugging hooks. The Python
+version of zerorpc automatically adds a ``_zerorpc_debug`` call, which can
+be used as follows::
+
+  $ zerorpc tcp://:4242 _zerorpc_debug eval 'globals().keys()'
+  $ zerorpc tcp://:4242 _zerorpc_debug exec 'x = 42'
+
+Note how we did ``globals().keys()`` instead of just e.g. ``globals()``:
+that's because ``globals()`` would not work, because it would contain
+many un-serializable objets.
+
+``eval`` is for expressions, ``exec`` is for statements. You can also use
+``pickle``, which is like ``eval``, but will pickle the result and send
+it as a raw string. Available actions are language-specific; as more
+implementations of zerorpc are made available, we hope that a consensus
+will appear; but for now, the reasoning is that it is probably not very
+useful to debug a Python service from a Node.js REPL or vice-versa.
