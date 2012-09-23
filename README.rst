@@ -38,22 +38,22 @@ Call the server from the command-line
 
 Now, in another terminal, call the exposed module::
 
-  $ zerorpc --client --connect tcp://*:1234 strftime %Y/%m/%d
-  Connecting to "tcp://*:1234"
+  $ zerorpc --client --connect tcp://127.0.0.1:1234 strftime %Y/%m/%d
+  Connecting to "tcp://127.0.0.1:1234"
   "2011/03/07"
 
 Since the client usecase is the most common one, "--client" is the default
 parameter, and you can remove it safely::
 
-  $ zerorpc --connect tcp://*:1234 strftime %Y/%m/%d
-  Connecting to "tcp://*:1234"
+  $ zerorpc --connect tcp://127.0.0.1:1234 strftime %Y/%m/%d
+  Connecting to "tcp://127.0.0.1:1234"
   "2011/03/07"
 
 Moreover, since the most common usecase is to *connect* (as opposed to *bind*)
 you can also omit "--connect"::
 
-  $ zerorpc tcp://*:1234 strftime %Y/%m/%d
-  Connecting to "tcp://*:1234"
+  $ zerorpc tcp://127.0.0.1:1234 strftime %Y/%m/%d
+  Connecting to "tcp://127.0.0.1:1234"
   "2011/03/07"
 
 
@@ -63,8 +63,8 @@ See remote service documentation
 You can introspect the remote service; it happens automatically if you don't
 specify the name of the function you want to call::
 
-  $ zerorpc tcp://*:1234
-  Connecting to "tcp://*:1234"
+  $ zerorpc tcp://127.0.0.1:1234
+  Connecting to "tcp://127.0.0.1:1234"
   tzset       tzset(zone)
   ctime       ctime(seconds) -> string
   clock       clock() -> floating point number
@@ -85,8 +85,8 @@ Specifying non-string arguments
 Now, see what happens if we try to call a function expecting a non-string
 argument::
 
-  $ zerorpc tcp://*:1234 sleep 3
-  Connecting to "tcp://*:1234"
+  $ zerorpc tcp://127.0.0.1:1234 sleep 3
+  Connecting to "tcp://127.0.0.1:1234"
   Traceback (most recent call last):
   [...]
   TypeError: a float is required
@@ -94,8 +94,8 @@ argument::
 That's because all command-line arguments are handled as strings. Don't worry,
 we can specify any kind of argument using JSON encoding::
 
-  $ zerorpc --json tcp://*:1234 sleep 3
-  Connecting to "tcp://*:1234"
+  $ zerorpc --json tcp://127.0.0.1:1234 sleep 3
+  Connecting to "tcp://127.0.0.1:1234"
   [wait for 3 seconds...]
   null
 
