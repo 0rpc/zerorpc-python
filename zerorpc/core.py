@@ -83,13 +83,13 @@ class ServerBase(object):
         self.stop()
         self._multiplexer.close()
 
-
-    def _format_args_spec(self, args_spec):
-        r = [dict(name=name) for name in args_spec[0]]
-        default_values = args_spec[3]
-        if default_values is not None:
-            for arg, def_val in zip(reversed(r), reversed(default_values)):
-                arg['default'] = def_val
+    def _format_args_spec(self, args_spec, r=None):
+        if args_spec:
+            r = [dict(name=name) for name in args_spec[0]]
+            default_values = args_spec[3]
+            if default_values is not None:
+                for arg, def_val in zip(reversed(r), reversed(default_values)):
+                    arg['default'] = def_val
         return r
 
     def _zerorpc_inspect(self):

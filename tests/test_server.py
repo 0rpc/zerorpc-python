@@ -201,3 +201,13 @@ def test_exception_compat_v1():
 
     client_events.close()
     srv.close()
+
+
+def test_removed_unscriptable_error_format_args_spec():
+
+    class MySrv(zerorpc.Server):
+        pass
+
+    srv = MySrv()
+    return_value = srv._format_args_spec(None)
+    assert return_value is None
