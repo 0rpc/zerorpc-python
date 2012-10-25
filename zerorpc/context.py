@@ -60,7 +60,7 @@ class Context(zmq.Context):
         if (self._msg_id_counter >= self._msg_id_counter_stop):
             self._reset_msgid()
         else:
-            self._msg_id_counter = (self._msg_id_counter + 1) & 0xffffffff
+            self._msg_id_counter = (self._msg_id_counter + 1)
         return '{0:08x}{1}'.format(self._msg_id_counter, self._msg_id_base)
 
     def register_middleware(self, middleware_instance):
