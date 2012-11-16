@@ -24,9 +24,6 @@
 
 
 import gevent
-import gevent.local
-import gevent.queue
-import gevent.event
 
 from zerorpc import zmq
 
