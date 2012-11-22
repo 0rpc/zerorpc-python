@@ -41,7 +41,7 @@ setup(
             'argparse',
             'gevent',
             'msgpack-python',
-            'pyzmq-static>=2.1.7',
+            'pyzmq>=2.2.0.1',
     ],
     tests_require=['nose'],
     test_suite='nose.collector',
