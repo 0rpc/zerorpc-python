@@ -113,7 +113,7 @@ class Socket(_zmq.Socket):
             gevent.sleep(0)
             while not self._writable.wait(timeout=1):
                 if self.getsockopt(_zmq.EVENTS) & _zmq.POLLOUT:
-                    print>>sys.stdderr, "/!\\ gevent_zeromq BUG /!\\ " \
+                    print>>sys.stderr, "/!\\ gevent_zeromq BUG /!\\ " \
                         "catching up after missing event (SEND) /!\\"
                     break
 
@@ -149,6 +149,6 @@ class Socket(_zmq.Socket):
             gevent.sleep(0)
             while not self._readable.wait(timeout=1):
                 if self.getsockopt(_zmq.EVENTS) & _zmq.POLLIN:
-                    print>>sys.stdderr, "/!\\ gevent_zeromq BUG /!\\ " \
+                    print>>sys.stderr, "/!\\ gevent_zeromq BUG /!\\ " \
                         "catching up after missing event (RECV) /!\\"
                     break
