@@ -37,6 +37,7 @@ from .channel import ChannelMultiplexer, BufferedChannel
 from .socket import SocketBase
 from .heartbeat import HeartBeatOnChannel
 from .context import Context
+from .events import Event
 from .decorators import DecoratorBase, rep
 import patterns
 
@@ -252,8 +253,8 @@ class ClientBase(object):
 class Server(SocketBase, ServerBase):
 
     def __init__(self, methods=None, name=None, context=None, pool_size=None,
-            heartbeat=5):
-        SocketBase.__init__(self, zmq.XREP, context)
+            heartbeat=5, event_class=Event):
+        SocketBase.__init__(self, zmq.XREP, context, event_class=event_class)
 
         if methods is None:
             methods = self
@@ -271,8 +272,8 @@ class Server(SocketBase, ServerBase):
 class Client(SocketBase, ClientBase):
 
     def __init__(self, connect_to=None, context=None, timeout=30, heartbeat=5,
-            passive_heartbeat=False):
-        SocketBase.__init__(self, zmq.XREQ, context=context)
+            passive_heartbeat=False, event_class=Event):
+        SocketBase.__init__(self, zmq.XREQ, context=context, event_class=event_class)
         ClientBase.__init__(self, self._events, context, timeout, heartbeat,
                 passive_heartbeat)
         if connect_to:
