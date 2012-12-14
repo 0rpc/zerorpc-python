@@ -24,12 +24,12 @@
 
 
 from .context import Context
-from .events import Event, Events
+from .events import Events
 
 
 class SocketBase(object):
 
-    def __init__(self, zmq_socket_type, context=None, event_class=Event):
+    def __init__(self, zmq_socket_type, context=None, event_class=None):
         self._context = context or Context.get_instance()
         self._events = Events(zmq_socket_type, context, event_class=event_class)
 

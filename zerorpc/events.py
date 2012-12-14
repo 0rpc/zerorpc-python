@@ -168,10 +168,10 @@ class Event(object):
 
 
 class Events(object):
-    def __init__(self, zmq_socket_type, context=None, event_class=Event):
+    def __init__(self, zmq_socket_type, context=None, event_class=None):
         self._zmq_socket_type = zmq_socket_type
         self._context = context or Context.get_instance()
-        self._event_class = event_class
+        self._event_class = event_class or Event
         self._socket = zmq.Socket(self._context, zmq_socket_type)
         self._send = self._socket.send_multipart
         self._recv = self._socket.recv_multipart
