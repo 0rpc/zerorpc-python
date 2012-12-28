@@ -198,7 +198,7 @@ class Events(object):
 
     def _resolve_endpoint(self, endpoint, resolve=True):
         if resolve:
-            endpoint = self._context.middleware_resolve_endpoint(endpoint)
+            endpoint = self._context.hook_resolve_endpoint(endpoint)
         if isinstance(endpoint, (tuple, list)):
             r = []
             for sub_endpoint in endpoint:

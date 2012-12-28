@@ -23,53 +23,70 @@
 # SOFTWARE.
 
 
-
 class ReqRep:
 
-    def process_call(self, context, bufchan, event, functor):
-        result = context.middleware_call_procedure(functor, *event.args)
-        bufchan.emit('OK', (result,), context.middleware_get_task_context())
+    def process_call(self, context, bufchan, req_event, functor):
+        context.hook_server_before_exec(req_event)
+        result = functor(*req_event.args)
+        rep_event = bufchan.create_event('OK', (result,),
+                context.hook_get_task_context())
+        context.hook_server_after_exec(req_event, rep_event)
+        bufchan.emit_event(rep_event)
 
     def accept_answer(self, event):
         return True
 
-    def process_answer(self, context, bufchan, event, method,
-            raise_remote_error):
-        result = event.args[0]
-        if event.name == 'ERR':
-            raise_remote_error(event)
+    def process_answer(self, context, bufchan, rep_event, method,
+            handle_remote_error):
+        if rep_event.name == 'ERR':
+            exception = handle_remote_error(rep_event)
+            context.hook_client_after_request(rep_event, exception)
+            raise exception
+        context.hook_client_after_request(rep_event)
         bufchan.close()
+        result = rep_event.args[0]
         return result
 
 
 class ReqStream:
 
-    def process_call(self, context, bufchan, event, functor):
-        xheader = context.middleware_get_task_context()
-        for result in iter(context.middleware_call_procedure(functor,
-                *event.args)):
+    def process_call(self, context, bufchan, req_event, functor):
+        context.hook_server_before_exec(req_event)
+        xheader = context.hook_get_task_context()
+        for result in iter(functor(*req_event.args)):
             bufchan.emit('STREAM', result, xheader)
-        bufchan.emit('STREAM_DONE', None, xheader)
+        done_event = bufchan.create_event('STREAM_DONE', None, xheader)
+        # NOTE: "We" made the choice to call the hook once the stream is done,
+        # the other choice was to call it at each iteration. I don't think that
+        # one choice is better than the other, so I'm fine with changing this
+        # or adding the server_after_iteration and client_after_iteration hooks.
+        context.hook_server_after_exec(req_event, done_event)
+        bufchan.emit_event(done_event)
 
     def accept_answer(self, event):
         return event.name in ('STREAM', 'STREAM_DONE')
 
-    def process_answer(self, context, bufchan, event, method,
-            raise_remote_error):
+    def process_answer(self, context, bufchan, rep_event, method,
+            handle_remote_error):
 
-        def is_stream_done(event):
-            return event.name == 'STREAM_DONE'
+        def is_stream_done(rep_event):
+            return rep_event.name == 'STREAM_DONE'
         bufchan.on_close_if = is_stream_done
 
-        def iterator(event):
-            while event.name == 'STREAM':
-                yield event.args
-                event = bufchan.recv()
-            if event.name == 'ERR':
-                raise_remote_error(event)
+        def iterator(rep_event):
+            while rep_event.name == 'STREAM':
+                # Like in process_call, we made the choice to call the
+                # after_exec hook only when the stream is done.
+                yield rep_event.args
+                rep_event = bufchan.recv()
+            if rep_event.name == 'ERR':
+                exception = handle_remote_error(rep_event)
+                context.hook_client_after_request(rep_event, exception)
+                raise exception
+            context.hook_client_after_request(rep_event)
             bufchan.close()
 
-        return iterator(event)
+        return iterator(rep_event)
 
 
 patterns_list = [ReqStream(), ReqRep()]
