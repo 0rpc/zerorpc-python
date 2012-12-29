@@ -31,7 +31,7 @@ import md5
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint, skip
+from testutils import teardown, random_ipc_endpoint
 
 
 def test_resolve_endpoint():
@@ -343,7 +343,6 @@ def test_task_context_pushpull():
             ]
 
 
-@skip("PUB/SUB is badly broken in ZMQ and make this test fails")
 def test_task_context_pubsub():
     endpoint = random_ipc_endpoint()
     subscriber_ctx = zerorpc.Context()
@@ -368,8 +367,12 @@ def test_task_context_pubsub():
     c.connect(endpoint)
 
     trigger.clear()
-    c.echo('pub...')
-    trigger.wait()
+    # We need this retry logic to wait that the subscriber.run coroutine starts
+    # reading (the published messages will go to /dev/null until then).
+    for attempt in xrange(0, 10):
+        c.echo('pub...')
+        if trigger.wait(0.2):
+            break
 
     subscriber.stop()
     subscriber_task.join()
