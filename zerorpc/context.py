@@ -43,8 +43,7 @@ class Context(zmq.Context):
             'server_inspect_exception': [],
             'client_handle_remote_error': [],
             'client_before_request': [],
-            'client_after_request': [],
-            'client_return_answer': [],
+            'client_after_request': []
         }
         self._reset_msgid()
 
