@@ -95,9 +95,11 @@ def test_hook_client_before_request():
 class ClientAfterRequestMiddleware(object):
     def __init__(self):
         self.called = False
-    def client_after_request(self, event, exception):
+    def client_after_request(self, req_event, rep_event, exception):
         self.called = True
-        self.retcode = event.name
+        assert req_event is not None
+        assert req_event.name == "echo" or req_event.name == "echoes"
+        self.retcode = rep_event.name
         assert exception is None
 
 def test_hook_client_after_request():
@@ -158,9 +160,11 @@ def test_hook_client_after_request_timeout():
     class ClientAfterRequestMiddleware(object):
         def __init__(self):
             self.called = False
-        def client_after_request(self, event, exception):
+        def client_after_request(self, req_event, rep_event, exception):
             self.called = True
-            assert event is None
+            assert req_event is not None
+            assert req_event.name == "timeout"
+            assert rep_event is None
 
     zero_ctx = zerorpc.Context()
     test_middleware = ClientAfterRequestMiddleware()
@@ -187,7 +191,9 @@ def test_hook_client_after_request_timeout():
 class ClientAfterFailedRequestMiddleware(object):
     def __init__(self):
         self.called = False
-    def client_after_request(self, rep_event, exception):
+    def client_after_request(self, req_event, rep_event, exception):
+        assert req_event is not None
+        assert req_event.name == "crash" or req_event.name == "echoes_crash"
         self.called = True
         assert isinstance(exception, zerorpc.RemoteError)
         assert exception.name == 'RuntimeError'
@@ -338,7 +344,9 @@ def test_hook_client_after_request_custom_error():
             etype = eval(name)
             e = etype(tb)
             return e
-        def client_after_request(self, rep_event, exception):
+        def client_after_request(self, req_event, rep_event, exception):
+            assert req_event is not None
+            assert req_event.name == "crash"
             self.called = True
             assert isinstance(exception, RuntimeError)
 

@@ -36,13 +36,13 @@ class ReqRep:
     def accept_answer(self, event):
         return True
 
-    def process_answer(self, context, bufchan, rep_event, method,
+    def process_answer(self, context, bufchan, req_event, rep_event,
             handle_remote_error):
         if rep_event.name == 'ERR':
             exception = handle_remote_error(rep_event)
-            context.hook_client_after_request(rep_event, exception)
+            context.hook_client_after_request(req_event, rep_event, exception)
             raise exception
-        context.hook_client_after_request(rep_event)
+        context.hook_client_after_request(req_event, rep_event)
         bufchan.close()
         result = rep_event.args[0]
         return result
@@ -66,14 +66,14 @@ class ReqStream:
     def accept_answer(self, event):
         return event.name in ('STREAM', 'STREAM_DONE')
 
-    def process_answer(self, context, bufchan, rep_event, method,
+    def process_answer(self, context, bufchan, req_event, rep_event,
             handle_remote_error):
 
         def is_stream_done(rep_event):
             return rep_event.name == 'STREAM_DONE'
         bufchan.on_close_if = is_stream_done
 
-        def iterator(rep_event):
+        def iterator(req_event, rep_event):
             while rep_event.name == 'STREAM':
                 # Like in process_call, we made the choice to call the
                 # after_exec hook only when the stream is done.
@@ -81,12 +81,12 @@ class ReqStream:
                 rep_event = bufchan.recv()
             if rep_event.name == 'ERR':
                 exception = handle_remote_error(rep_event)
-                context.hook_client_after_request(rep_event, exception)
+                context.hook_client_after_request(req_event, rep_event, exception)
                 raise exception
-            context.hook_client_after_request(rep_event)
+            context.hook_client_after_request(req_event, rep_event)
             bufchan.close()
 
-        return iterator(rep_event)
+        return iterator(req_event, rep_event)
 
 
 patterns_list = [ReqStream(), ReqRep()]

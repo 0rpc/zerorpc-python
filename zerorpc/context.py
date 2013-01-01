@@ -151,7 +151,7 @@ class Context(zmq.Context):
         for functor in self._hooks['client_before_request']:
             functor(event)
 
-    def hook_client_after_request(self, reply_event, exception=None):
+    def hook_client_after_request(self, request_event, reply_event, exception=None):
         """Called when an answer or a timeout has been received from the server.
 
         This hook is called right before the answer is returned to the client.
@@ -171,4 +171,4 @@ class Context(zmq.Context):
 
         """
         for functor in self._hooks['client_after_request']:
-            functor(reply_event, exception)
+            functor(request_event, reply_event, exception)

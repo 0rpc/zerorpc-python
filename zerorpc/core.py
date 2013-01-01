@@ -208,19 +208,17 @@ class ClientBase(object):
         msg = 'Unable to find a pattern for: {0}'.format(event)
         raise RuntimeError(msg)
 
-    def _process_response(self, method, bufchan, timeout):
+    def _process_response(self, request_event, bufchan, timeout):
         try:
-            event = bufchan.recv(timeout)
-            pattern = self._select_pattern(event)
-            return pattern.process_answer(self._context, bufchan, event, method,
-                    self._handle_remote_error)
+            reply_event = bufchan.recv(timeout)
+            pattern = self._select_pattern(reply_event)
+            return pattern.process_answer(self._context, bufchan, request_event,
+                    reply_event, self._handle_remote_error)
         except TimeoutExpired:
             bufchan.close()
-            # FIXME: Add the method name as a separate argument? (so you
-            # could get it back using the args attribute in the middleware).
             ex = TimeoutExpired(timeout,
-                    'calling remote method {0}'.format(method))
-            self._context.hook_client_after_request(None, ex)
+                    'calling remote method {0}'.format(request_event.name))
+            self._context.hook_client_after_request(request_event, None, ex)
             raise ex
         except:
             bufchan.close()
@@ -234,13 +232,13 @@ class ClientBase(object):
         bufchan = BufferedChannel(hbchan, inqueue_size=kargs.get('slots', 100))
 
         xheader = self._context.hook_get_task_context()
-        event = bufchan.create_event(method, args, xheader)
-        self._context.hook_client_before_request(event)
-        bufchan.emit_event(event)
+        request_event = bufchan.create_event(method, args, xheader)
+        self._context.hook_client_before_request(request_event)
+        bufchan.emit_event(request_event)
 
         try:
             if kargs.get('async', False) is False:
-                return self._process_response(method, bufchan, timeout)
+                return self._process_response(request_event, bufchan, timeout)
 
             async_result = gevent.event.AsyncResult()
             gevent.spawn(self._process_response, method, bufchan,
