@@ -25,8 +25,8 @@
 
 import gevent
 import gevent.event
-
 import zerorpc
+
 from testutils import teardown, random_ipc_endpoint
 
 
@@ -71,10 +71,15 @@ def test_pubsub_inheritance():
     gevent.spawn(subscriber.run)
 
     trigger.clear()
-    publisher.lolita(1, 2)
-    trigger.wait()
-    print 'done'
+    # We need this retry logic to wait that the subscriber.run coroutine starts
+    # reading (the published messages will go to /dev/null until then).
+    for attempt in xrange(0, 10):
+        publisher.lolita(1, 2)
+        if trigger.wait(0.2):
+            print 'done'
+            return
 
+    raise RuntimeError("The subscriber didn't receive any published message")
 
 def test_pushpull_composite():
     endpoint = random_ipc_endpoint()
@@ -119,6 +124,12 @@ def test_pubsub_composite():
     gevent.spawn(subscriber.run)
 
     trigger.clear()
-    publisher.lolita(1, 2)
-    trigger.wait()
-    print 'done'
+    # We need this retry logic to wait that the subscriber.run coroutine starts
+    # reading (the published messages will go to /dev/null until then).
+    for attempt in xrange(0, 10):
+        publisher.lolita(1, 2)
+        if trigger.wait(0.2):
+            print 'done'
+            return
+
+    raise RuntimeError("The subscriber didn't receive any published message")

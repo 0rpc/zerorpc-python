@@ -117,24 +117,16 @@ class ServerBase(object):
             raise NameError(method)
         return self._methods[method](*args)
 
-    def _print_traceback(self, protocol_v1):
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        try:
-            traceback.print_exception(exc_type, exc_value, exc_traceback,
-                    file=sys.stderr)
+    def _print_traceback(self, protocol_v1, exc_infos):
+        traceback.print_exception(*exc_infos, file=sys.stderr)
 
-            self._context.middleware_inspect_error(exc_type, exc_value,
-                    exc_traceback)
-
-            if protocol_v1:
-                return (repr(exc_value),)
-
-            human_traceback = traceback.format_exc()
-            name = exc_type.__name__
-            human_msg = str(exc_value)
-            return (name, human_msg, human_traceback)
-        finally:
-            del exc_traceback
+        exc_type, exc_value, exc_traceback = exc_infos
+        if protocol_v1:
+            return (repr(exc_value),)
+        human_traceback = traceback.format_exc()
+        name = exc_type.__name__
+        human_msg = str(exc_value)
+        return (name, human_msg, human_traceback)
 
     def _async_task(self, initial_event):
         protocol_v1 = initial_event.header.get('v', 1) < 2
@@ -142,20 +134,26 @@ class ServerBase(object):
         hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
                 passive=protocol_v1)
         bufchan = BufferedChannel(hbchan)
+        exc_infos = None
         event = bufchan.recv()
         try:
-            self._context.middleware_load_task_context(event.header)
+            self._context.hook_load_task_context(event.header)
             functor = self._methods.get(event.name, None)
             if functor is None:
                 raise NameError(event.name)
             functor.pattern.process_call(self._context, bufchan, event, functor)
         except LostRemote:
-            self._print_traceback(protocol_v1)
+            exc_infos = list(sys.exc_info())
+            self._print_traceback(protocol_v1, exc_infos)
         except Exception:
-            exception_info = self._print_traceback(protocol_v1)
-            bufchan.emit('ERR', exception_info,
-                    self._context.middleware_get_task_context())
+            exc_infos = list(sys.exc_info())
+            human_exc_infos = self._print_traceback(protocol_v1, exc_infos)
+            reply_event = bufchan.create_event('ERR', human_exc_infos,
+                    self._context.hook_get_task_context())
+            self._context.hook_server_inspect_exception(event, reply_event, exc_infos)
+            bufchan.emit_event(reply_event)
         finally:
+            del exc_infos
             bufchan.close()
 
     def _acceptor(self):
@@ -191,15 +189,17 @@ class ClientBase(object):
     def close(self):
         self._multiplexer.close()
 
-    def _raise_remote_error(self, event):
-        self._context.middleware_raise_error(event)
+    def _handle_remote_error(self, event):
+        exception = self._context.hook_client_handle_remote_error(event)
+        if not exception:
+            if event.header.get('v', 1) >= 2:
+                (name, msg, traceback) = event.args
+                exception = RemoteError(name, msg, traceback)
+            else:
+                (msg,) = event.args
+                exception = RemoteError('RemoteError', msg, None)
 
-        if event.header.get('v', 1) >= 2:
-            (name, msg, traceback) = event.args
-            raise RemoteError(name, msg, traceback)
-        else:
-            (msg,) = event.args
-            raise RemoteError('RemoteError', msg, None)
+        return exception
 
     def _select_pattern(self, event):
         for pattern in patterns.patterns_list:
@@ -208,17 +208,18 @@ class ClientBase(object):
         msg = 'Unable to find a pattern for: {0}'.format(event)
         raise RuntimeError(msg)
 
-    def _process_response(self, method, bufchan, timeout):
+    def _process_response(self, request_event, bufchan, timeout):
         try:
-            try:
-                event = bufchan.recv(timeout)
-            except TimeoutExpired:
-                raise TimeoutExpired(timeout,
-                        'calling remote method {0}'.format(method))
-
-            pattern = self._select_pattern(event)
-            return pattern.process_answer(self._context, bufchan, event, method,
-                    self._raise_remote_error)
+            reply_event = bufchan.recv(timeout)
+            pattern = self._select_pattern(reply_event)
+            return pattern.process_answer(self._context, bufchan, request_event,
+                    reply_event, self._handle_remote_error)
+        except TimeoutExpired:
+            bufchan.close()
+            ex = TimeoutExpired(timeout,
+                    'calling remote method {0}'.format(request_event.name))
+            self._context.hook_client_after_request(request_event, None, ex)
+            raise ex
         except:
             bufchan.close()
             raise
@@ -230,18 +231,24 @@ class ClientBase(object):
                 passive=self._passive_heartbeat)
         bufchan = BufferedChannel(hbchan, inqueue_size=kargs.get('slots', 100))
 
-        xheader = self._context.middleware_get_task_context()
-        bufchan.emit(method, args, xheader)
+        xheader = self._context.hook_get_task_context()
+        request_event = bufchan.create_event(method, args, xheader)
+        self._context.hook_client_before_request(request_event)
+        bufchan.emit_event(request_event)
 
         try:
             if kargs.get('async', False) is False:
-                return self._process_response(method, bufchan, timeout)
+                return self._process_response(request_event, bufchan, timeout)
 
             async_result = gevent.event.AsyncResult()
             gevent.spawn(self._process_response, method, bufchan,
                     timeout).link(async_result)
             return async_result
         except:
+            # XXX: This is going to be closed twice if async is false and
+            # _process_response raises an exception. I wonder if the above
+            # async branch can raise an exception too, if no we can just remove
+            # this code.
             bufchan.close()
             raise
 
@@ -254,7 +261,6 @@ class Server(SocketBase, ServerBase):
     def __init__(self, methods=None, name=None, context=None, pool_size=None,
             heartbeat=5):
         SocketBase.__init__(self, zmq.XREP, context)
-
         if methods is None:
             methods = self
 
@@ -290,7 +296,7 @@ class Pusher(SocketBase):
 
     def __call__(self, method, *args):
         self._events.emit(method, args,
-                self._context.middleware_get_task_context())
+                self._context.hook_get_task_context())
 
     def __getattr__(self, method):
         return lambda *args: self(method, *args)
@@ -322,19 +328,19 @@ class Puller(SocketBase):
             try:
                 if event.name not in self._methods:
                     raise NameError(event.name)
-                self._context.middleware_load_task_context(event.header)
-                self._context.middleware_call_procedure(
-                    self._methods[event.name],
-                    *event.args)
+                self._context.hook_load_task_context(event.header)
+                self._context.hook_server_before_exec(event)
+                self._methods[event.name](*event.args)
+                # In Push/Pull their is no reply to send, hence None for the
+                # reply_event argument
+                self._context.hook_server_after_exec(event, None)
             except Exception:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
+                exc_infos = sys.exc_info()
                 try:
-                    traceback.print_exception(exc_type, exc_value, exc_traceback,
-                            file=sys.stderr)
-                    self._context.middleware_inspect_error(exc_type, exc_value,
-                            exc_traceback)
+                    traceback.print_exception(*exc_infos, file=sys.stderr)
+                    self._context.hook_server_inspect_exception(event, None, exc_infos)
                 finally:
-                    del exc_traceback
+                    del exc_infos
 
     def run(self):
         self._receiver_task = gevent.spawn(self._receiver)
@@ -395,8 +401,8 @@ def fork_task_context(functor, context=None):
             - if the new task will make any zerorpc call, it should be wrapped.
     '''
     context = context or Context.get_instance()
-    header = context.middleware_get_task_context()
+    header = context.hook_get_task_context()
     def wrapped(*args, **kargs):
-        context.middleware_load_task_context(header)
+        context.hook_load_task_context(header)
         return functor(*args, **kargs)
     return wrapped
