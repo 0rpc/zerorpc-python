@@ -277,8 +277,8 @@ class Server(SocketBase, ServerBase):
 class Client(SocketBase, ClientBase):
 
     def __init__(self, connect_to=None, context=None, timeout=30, heartbeat=5,
-            passive_heartbeat=False, event_class=None):
-        SocketBase.__init__(self, zmq.XREQ, context=context, event_class=event_class)
+            passive_heartbeat=False):
+        SocketBase.__init__(self, zmq.XREQ, context=context)
         ClientBase.__init__(self, self._events, context, timeout, heartbeat,
                 passive_heartbeat)
         if connect_to:

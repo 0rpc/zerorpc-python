@@ -109,19 +109,17 @@ class Event(object):
 
     __slots__ = [ '_name', '_args', '_header' ]
 
-    def __init__(self, name, args, context, header=None, create=False):
+    def __init__(self, name, args, context, header=None):
         self._name = name
         self._args = args
-        if header is None or create:
+        if header is None:
+            context = context
             self._header = {
                     'message_id': context.new_msgid(),
                     'v': 3
                     }
         else:
             self._header = header
-        if header and create:
-            header.pop('zmqid', None)
-            self._header.update(header)
 
     @property
     def header(self):
@@ -142,8 +140,8 @@ class Event(object):
     def pack(self):
         return msgpack.Packer().pack((self._header, self._name, self._args))
 
-    @classmethod
-    def unpack(cls, blob):
+    @staticmethod
+    def unpack(blob):
         unpacker = msgpack.Unpacker()
         unpacker.feed(blob)
         (header, name, args) = unpacker.unpack()
@@ -152,7 +150,7 @@ class Event(object):
         if not isinstance(header, dict):
             header = {}
 
-        return cls(name, args, None, header)
+        return Event(name, args, None, header)
 
     def __str__(self, ignore_args=False):
         if ignore_args:
@@ -168,10 +166,9 @@ class Event(object):
 
 
 class Events(object):
-    def __init__(self, zmq_socket_type, context=None, event_class=None):
+    def __init__(self, zmq_socket_type, context=None):
         self._zmq_socket_type = zmq_socket_type
         self._context = context or Context.get_instance()
-        self._event_class = event_class or Event
         self._socket = zmq.Socket(self._context, zmq_socket_type)
         self._send = self._socket.send_multipart
         self._recv = self._socket.recv_multipart
@@ -222,7 +219,11 @@ class Events(object):
         return r
 
     def create_event(self, name, args, xheader={}):
-        event = self._event_class(name, args, context=self._context, header=xheader, create=True)
+        event = Event(name, args, context=self._context)
+        for k, v in xheader.items():
+            if k == 'zmqid':
+                continue
+            event.header[k] = v
         return event
 
     def emit_event(self, event, identity=None):
@@ -248,7 +249,7 @@ class Events(object):
         else:
             identity = parts[0:-2]
             blob = parts[-1]
-        event = self._event_class.unpack(blob)
+        event = Event.unpack(blob)
         if identity is not None:
             event.header['zmqid'] = identity
         return event
