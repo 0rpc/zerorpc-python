@@ -49,11 +49,11 @@ def test_resolve_endpoint():
     print 'registered_count:', cnt
     assert cnt == 1
 
-    print 'resolve titi:', c.middleware_resolve_endpoint('titi')
-    assert c.middleware_resolve_endpoint('titi') == test_endpoint
+    print 'resolve titi:', c.hook_resolve_endpoint('titi')
+    assert c.hook_resolve_endpoint('titi') == test_endpoint
 
-    print 'resolve toto:', c.middleware_resolve_endpoint('toto')
-    assert c.middleware_resolve_endpoint('toto') == 'toto'
+    print 'resolve toto:', c.hook_resolve_endpoint('toto')
+    assert c.hook_resolve_endpoint('toto') == 'toto'
 
     class Resolver():
 
@@ -66,16 +66,16 @@ def test_resolve_endpoint():
     print 'registered_count:', cnt
     assert cnt == 1
 
-    print 'resolve titi:', c.middleware_resolve_endpoint('titi')
-    assert c.middleware_resolve_endpoint('titi') == test_endpoint
-    print 'resolve toto:', c.middleware_resolve_endpoint('toto')
-    assert c.middleware_resolve_endpoint('toto') == test_endpoint
+    print 'resolve titi:', c.hook_resolve_endpoint('titi')
+    assert c.hook_resolve_endpoint('titi') == test_endpoint
+    print 'resolve toto:', c.hook_resolve_endpoint('toto')
+    assert c.hook_resolve_endpoint('toto') == test_endpoint
 
     c2 = zerorpc.Context()
-    print 'resolve titi:', c2.middleware_resolve_endpoint('titi')
-    assert c2.middleware_resolve_endpoint('titi') == 'titi'
-    print 'resolve toto:', c2.middleware_resolve_endpoint('toto')
-    assert c2.middleware_resolve_endpoint('toto') == 'toto'
+    print 'resolve titi:', c2.hook_resolve_endpoint('titi')
+    assert c2.hook_resolve_endpoint('titi') == 'titi'
+    print 'resolve toto:', c2.hook_resolve_endpoint('toto')
+    assert c2.hook_resolve_endpoint('toto') == 'toto'
 
 
 def test_resolve_endpoint_events():
@@ -108,151 +108,6 @@ def test_resolve_endpoint_events():
 
     client.close()
     srv.close()
-
-
-def test_raise_error():
-    endpoint = random_ipc_endpoint()
-    c = zerorpc.Context()
-
-    class DummyRaiser():
-        def raise_error(self, event):
-            pass
-
-    class Srv(zerorpc.Server):
-        pass
-
-    srv = Srv(context=c)
-    srv.bind(endpoint)
-    gevent.spawn(srv.run)
-
-    client = zerorpc.Client(context=c)
-    client.connect(endpoint)
-
-    with assert_raises(zerorpc.RemoteError):
-        client.donotexist()
-
-    cnt = c.register_middleware(DummyRaiser())
-    assert cnt == 1
-
-    with assert_raises(zerorpc.RemoteError):
-        client.donotexist()
-
-    class HorribleEvalRaiser():
-        def raise_error(self, event):
-            (name, msg, tb) = event.args
-            etype = eval(name)
-            e = etype(tb)
-            raise e
-
-    cnt = c.register_middleware(HorribleEvalRaiser())
-    assert cnt == 1
-
-    with assert_raises(NameError):
-        try:
-            client.donotexist()
-        except NameError as e:
-            print 'got it:', e
-            raise
-
-    client.close()
-    srv.close()
-
-
-def test_call_procedure():
-    c = zerorpc.Context()
-
-    def test(argument):
-        return 'ret_real:' + argument
-    assert c.middleware_call_procedure(test, 'dummy') == 'ret_real:dummy'
-
-    def middleware_1(procedure, *args, **kwargs):
-        return 'ret_middleware_1:' + procedure(*args, **kwargs)
-    cnt = c.register_middleware({
-        'call_procedure': middleware_1
-        })
-    assert cnt == 1
-    assert c.middleware_call_procedure(test, 'dummy') == \
-        'ret_middleware_1:ret_real:dummy'
-
-    def middleware_2(procedure, *args, **kwargs):
-        return 'ret_middleware_2:' + procedure(*args, **kwargs)
-    cnt = c.register_middleware({
-        'call_procedure': middleware_2
-        })
-    assert cnt == 1
-    assert c.middleware_call_procedure(test, 'dummy') == \
-        'ret_middleware_2:ret_middleware_1:ret_real:dummy'
-
-    def mangle_arguments(procedure, *args, **kwargs):
-        return procedure(args[0].upper())
-    cnt = c.register_middleware({
-        'call_procedure': mangle_arguments
-        })
-    assert cnt == 1
-    assert c.middleware_call_procedure(test, 'dummy') == \
-        'ret_middleware_2:ret_middleware_1:ret_real:DUMMY'
-
-    endpoint = random_ipc_endpoint()
-
-    # client/server
-    class Server(zerorpc.Server):
-        def test(self, argument):
-            return 'ret_real:' + argument
-    server = Server(heartbeat=1, context=c)
-    server.bind(endpoint)
-    gevent.spawn(server.run)
-    client = zerorpc.Client(heartbeat=1, context=c)
-    client.connect(endpoint)
-    assert client.test('dummy') == \
-        'ret_middleware_2:ret_middleware_1:ret_real:DUMMY'
-    client.close()
-    server.close()
-
-    # push/pull
-    trigger = gevent.event.Event()
-    class Puller(zerorpc.Puller):
-        argument = None
-
-        def test(self, argument):
-            self.argument = argument
-            trigger.set()
-            return self.argument
-
-    puller = Puller(context=c)
-    puller.bind(endpoint)
-    gevent.spawn(puller.run)
-    pusher = zerorpc.Pusher(context=c)
-    pusher.connect(endpoint)
-    trigger.clear()
-    pusher.test('dummy')
-    trigger.wait()
-    assert puller.argument == 'DUMMY'
-    #FIXME: These seems to be broken
-    # pusher.close()
-    # puller.close()
-
-    # pub/sub
-    trigger = gevent.event.Event()
-    class Subscriber(zerorpc.Subscriber):
-        argument = None
-
-        def test(self, argument):
-            self.argument = argument
-            trigger.set()
-            return self.argument
-
-    subscriber = Subscriber(context=c)
-    subscriber.bind(endpoint)
-    gevent.spawn(subscriber.run)
-    publisher = zerorpc.Publisher(context=c)
-    publisher.connect(endpoint)
-    trigger.clear()
-    publisher.test('dummy')
-    trigger.wait()
-    assert subscriber.argument == 'DUMMY'
-    #FIXME: These seems to be broken
-    # publisher.close()
-    # subscriber.close()
 
 
 class Tracer:
@@ -512,8 +367,12 @@ def test_task_context_pubsub():
     c.connect(endpoint)
 
     trigger.clear()
-    c.echo('pub...')
-    trigger.wait()
+    # We need this retry logic to wait that the subscriber.run coroutine starts
+    # reading (the published messages will go to /dev/null until then).
+    for attempt in xrange(0, 10):
+        c.echo('pub...')
+        if trigger.wait(0.2):
+            break
 
     subscriber.stop()
     subscriber_task.join()
@@ -525,25 +384,38 @@ def test_task_context_pubsub():
             ('load', publisher_tracer.trace_id),
             ]
 
-def test_inspect_error_middleware():
 
-    class InspectErrorMiddleware(Tracer):
-        def __init__(self):
-            self.called = False
-            Tracer.__init__(self, identity='[server]')
+class InspectExceptionMiddleware(Tracer):
+    def __init__(self, barrier=None):
+        self.called = False
+        self._barrier = barrier
+        Tracer.__init__(self, identity='[server]')
 
-        def inspect_error(self, task_context, exc_info):
-            assert 'trace_id' in task_context
-            exc_type, exc_value, exc_traceback = exc_info
-            self.called = True
+    def server_inspect_exception(self, request_event, reply_event, task_context, exc_info):
+        assert 'trace_id' in task_context
+        assert request_event.name == 'echo'
+        if self._barrier: # Push/Pull
+            assert reply_event is None
+        else: # Req/Rep or Req/Stream
+            assert reply_event.name == 'ERR'
+        exc_type, exc_value, exc_traceback = exc_info
+        self.called = True
+        if self._barrier:
+            self._barrier.set()
 
-    class Srv(object):
-        def echo(self, msg):
-            raise RuntimeError(msg)
+class Srv(object):
 
+    def echo(self, msg):
+        raise RuntimeError(msg)
+
+    @zerorpc.stream
+    def echoes(self, msg):
+        raise RuntimeError(msg)
+
+def test_server_inspect_exception_middleware():
     endpoint = random_ipc_endpoint()
 
-    middleware = InspectErrorMiddleware()
+    middleware = InspectExceptionMiddleware()
     ctx = zerorpc.Context()
     ctx.register_middleware(middleware)
 
@@ -556,7 +428,7 @@ def test_inspect_error_middleware():
     client.connect(endpoint)
 
     try:
-        client.echo('This is a test which should call the InspectErrorMiddleware')
+        client.echo('This is a test which should call the InspectExceptionMiddleware')
     except zerorpc.exceptions.RemoteError as ex:
         assert ex.name == 'RuntimeError'
 
@@ -565,28 +437,11 @@ def test_inspect_error_middleware():
 
     assert middleware.called is True
 
-def test_inspect_error_middleware_puller():
-
-    class InspectErrorMiddleware(Tracer):
-        def __init__(self, barrier):
-            self.called = False
-            self._barrier = barrier
-            Tracer.__init__(self, identity='[server]')
-
-        def inspect_error(self, task_context, exc_info):
-            assert 'trace_id' in task_context
-            exc_type, exc_value, exc_traceback = exc_info
-            self.called = True
-            self._barrier.set()
-
-    class Srv(object):
-        def echo(self, msg):
-            raise RuntimeError(msg)
-
+def test_server_inspect_exception_middleware_puller():
     endpoint = random_ipc_endpoint()
 
     barrier = gevent.event.Event()
-    middleware = InspectErrorMiddleware(barrier)
+    middleware = InspectExceptionMiddleware(barrier)
     ctx = zerorpc.Context()
     ctx.register_middleware(middleware)
 
@@ -599,8 +454,33 @@ def test_inspect_error_middleware_puller():
     client.connect(endpoint)
 
     barrier.clear()
-    client.echo('This is a test which should call the InspectErrorMiddleware')
-    barrier.wait()
+    client.echo('This is a test which should call the InspectExceptionMiddleware')
+    barrier.wait(timeout=2)
+
+    client.close()
+    server.close()
+
+    assert middleware.called is True
+
+def test_server_inspect_exception_middleware_stream():
+    endpoint = random_ipc_endpoint()
+
+    middleware = InspectExceptionMiddleware()
+    ctx = zerorpc.Context()
+    ctx.register_middleware(middleware)
+
+    module = Srv()
+    server = zerorpc.Server(module, context=ctx)
+    server.bind(endpoint)
+    gevent.spawn(server.run)
+
+    client = zerorpc.Client()
+    client.connect(endpoint)
+
+    try:
+        client.echo('This is a test which should call the InspectExceptionMiddleware')
+    except zerorpc.exceptions.RemoteError as ex:
+        assert ex.name == 'RuntimeError'
 
     client.close()
     server.close()

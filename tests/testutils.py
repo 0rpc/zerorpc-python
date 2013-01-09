@@ -22,6 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import functools
+import nose.exc
 import random
 import os
 
@@ -42,3 +44,11 @@ def teardown():
         except Exception:
             pass
     _tmpfiles = []
+
+def skip(reason):
+    def _skip(test):
+        @functools.wraps(test)
+        def wrap():
+            raise nose.exc.SkipTest(reason)
+        return wrap
+    return _skip
