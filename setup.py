@@ -23,11 +23,22 @@
 # SOFTWARE.
 
 execfile('zerorpc/version.py')
+import sys
+
 
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
+
+
+requirements = [
+        'gevent',
+        'msgpack-python',
+        'pyzmq>=2.2.0.1'
+]
+if sys.version_info < (2, 7):
+        requirements.append('argparse')
 
 
 setup(
@@ -37,12 +48,7 @@ setup(
     author=__author__,
     url='https://github.com/dotcloud/zerorpc-python',
     packages=['zerorpc'],
-    install_requires=[
-            'argparse',
-            'gevent',
-            'msgpack-python',
-            'pyzmq>=2.2.0.1',
-    ],
+    install_requires=requirements,
     tests_require=['nose'],
     test_suite='nose.collector',
     zip_safe=False,
