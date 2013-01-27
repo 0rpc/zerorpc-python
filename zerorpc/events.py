@@ -144,7 +144,13 @@ class Event(object):
     def unpack(blob):
         unpacker = msgpack.Unpacker()
         unpacker.feed(blob)
-        (header, name, args) = unpacker.unpack()
+        unpacked_msg = unpacker.unpack()
+
+        try:
+            (header, name, args) = unpacked_msg
+        except Exception as e:
+            raise Exception('invalid msg format "{0}": {1}'.format(
+                unpacked_msg, e))
 
         # Backward compatibility
         if not isinstance(header, dict):

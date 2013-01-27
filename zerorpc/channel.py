@@ -73,7 +73,13 @@ class ChannelMultiplexer(object):
 
     def _channel_dispatcher(self):
         while True:
-            event = self._events.recv()
+            try:
+                event = self._events.recv()
+            except Exception as e:
+                print >> sys.stderr, \
+                        'zerorpc.ChannelMultiplexer,', \
+                        'ignoring error on recv: {0}'.format(e)
+                continue
             channel_id = event.header.get('response_to', None)
 
             queue = None
@@ -86,7 +92,7 @@ class ChannelMultiplexer(object):
 
             if queue is None:
                 print >> sys.stderr, \
-                        'zerorpc.ChannelMultiplexer, ', \
+                        'zerorpc.ChannelMultiplexer,', \
                         'unable to route event:', \
                         event.__str__(ignore_args=True)
             else:
