@@ -241,7 +241,7 @@ class ClientBase(object):
                 return self._process_response(request_event, bufchan, timeout)
 
             async_result = gevent.event.AsyncResult()
-            gevent.spawn(self._process_response, method, bufchan,
+            gevent.spawn(self._process_response, request_event, bufchan,
                     timeout).link(async_result)
             return async_result
         except:
