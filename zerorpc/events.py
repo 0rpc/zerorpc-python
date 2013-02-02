@@ -113,7 +113,6 @@ class Event(object):
         self._name = name
         self._args = args
         if header is None:
-            context = context
             self._header = {
                     'message_id': context.new_msgid(),
                     'v': 3
