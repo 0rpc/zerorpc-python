@@ -270,5 +270,3 @@ def main():
 
     return run_server(args)
 
-if __name__ == '__main__':
-    exit(main())

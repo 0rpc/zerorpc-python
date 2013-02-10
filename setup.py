@@ -52,9 +52,7 @@ setup(
     tests_require=['nose'],
     test_suite='nose.collector',
     zip_safe=False,
-    scripts=[
-            'bin/zerorpc'
-        ],
+    entry_points={'console_scripts': ['zerorpc = zerorpc.cli:main']},
     license='MIT',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
