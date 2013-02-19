@@ -188,9 +188,9 @@ Now, in another terminal, let's try connecting to our awesome zeroservice::
 
   $ zerorpc -j tcp://:4242 add_42 1
   43
-  $ zerorpc tcp://:4242 add_man 'I own a mint-condition Wolkswagen Golf'
-  "I own a mint-condition Wolkswagen Gold, man!"
-  $ zerorpc tcp://:4242 boat 'I own a mint-condition Wolkswagen Gold, man!'
+  $ zerorpc tcp://:4242 add_man 'I own a mint-condition Volkswagen Golf'
+  "I own a mint-condition Volkswagen Golf, man!"
+  $ zerorpc tcp://:4242 boat 'I own a mint-condition Volkswagen Golf, man!'
   "I'm on a boat!"
 
 
