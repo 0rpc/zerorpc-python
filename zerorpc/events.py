@@ -177,18 +177,21 @@ class Events(object):
         self._socket = zmq.Socket(self._context, zmq_socket_type)
         self._send = self._socket.send_multipart
         self._recv = self._socket.recv_multipart
-        if zmq_socket_type in (zmq.PUSH, zmq.PUB, zmq.XREQ, zmq.XREP):
+        if zmq_socket_type in (zmq.PUSH, zmq.PUB, zmq.DEALER, zmq.ROUTER):
             self._send = Sender(self._socket)
-        if zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.XREQ, zmq.XREP):
+        if zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER):
             self._recv = Receiver(self._socket)
 
     @property
     def recv_is_available(self):
-        return self._zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.XREQ, zmq.XREP)
+        return self._zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER)
 
     def __del__(self):
-        if not self._socket.closed:
-            self.close()
+        try:
+            if not self._socket.closed:
+                self.close()
+        except AttributeError:
+            pass
 
     def close(self):
         try:
@@ -235,7 +238,7 @@ class Events(object):
         if identity is not None:
             parts = list(identity)
             parts.extend(['', event.pack()])
-        elif self._zmq_socket_type in (zmq.XREQ, zmq.XREP):
+        elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
             parts = ('', event.pack())
         else:
             parts = (event.pack(),)

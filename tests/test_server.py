@@ -46,7 +46,7 @@ def test_server_manual():
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
@@ -176,7 +176,7 @@ def test_exception_compat_v1():
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 

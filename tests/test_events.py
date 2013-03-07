@@ -131,10 +131,10 @@ def test_events_req_rep2():
 
 def test_events_dealer_router():
     endpoint = random_ipc_endpoint()
-    server = zerorpc.Events(zmq.XREP)
+    server = zerorpc.Events(zmq.ROUTER)
     server.bind(endpoint)
 
-    client = zerorpc.Events(zmq.XREQ)
+    client = zerorpc.Events(zmq.DEALER)
     client.connect(endpoint)
 
     for i in xrange(6):

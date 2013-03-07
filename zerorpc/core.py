@@ -260,7 +260,7 @@ class Server(SocketBase, ServerBase):
 
     def __init__(self, methods=None, name=None, context=None, pool_size=None,
             heartbeat=5):
-        SocketBase.__init__(self, zmq.XREP, context)
+        SocketBase.__init__(self, zmq.ROUTER, context)
         if methods is None:
             methods = self
 
@@ -278,7 +278,7 @@ class Client(SocketBase, ClientBase):
 
     def __init__(self, connect_to=None, context=None, timeout=30, heartbeat=5,
             passive_heartbeat=False):
-        SocketBase.__init__(self, zmq.XREQ, context=context)
+        SocketBase.__init__(self, zmq.DEALER, context=context)
         ClientBase.__init__(self, self._events, context, timeout, heartbeat,
                 passive_heartbeat)
         if connect_to:

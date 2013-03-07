@@ -32,11 +32,11 @@ from testutils import teardown, random_ipc_endpoint
 
 def test_sub_events():
     endpoint = random_ipc_endpoint()
-    server_events = zerorpc.Events(zmq.XREP)
+    server_events = zerorpc.Events(zmq.ROUTER)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
@@ -64,11 +64,11 @@ def test_sub_events():
 
 def test_multiple_sub_events():
     endpoint = random_ipc_endpoint()
-    server_events = zerorpc.Events(zmq.XREP)
+    server_events = zerorpc.Events(zmq.ROUTER)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
@@ -118,11 +118,11 @@ def test_multiple_sub_events():
 def test_recursive_multiplexer():
     endpoint = random_ipc_endpoint()
 
-    server_events = zerorpc.Events(zmq.XREP)
+    server_events = zerorpc.Events(zmq.ROUTER)
     server_events.bind(endpoint)
     servermux = zerorpc.ChannelMultiplexer(server_events)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     clientmux = zerorpc.ChannelMultiplexer(client_events,
         ignore_broadcast=True)

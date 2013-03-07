@@ -47,17 +47,21 @@ class Socket(_zmq.Socket):
     def __init__(self, context, socket_type):
         super(Socket, self).__init__(context, socket_type)
         on_state_changed_fd = self.getsockopt(_zmq.FD)
-        self._readable = gevent.event.Event()
-        self._writable = gevent.event.Event()
+        # Since pyzmq 13.0.0 implicit assignation is forbidden. Trying to define
+        # the attributes as a class member first do not work either because the
+        # setattr is a non-op! So we are doing it the ugly way.
+        self.__dict__["_readable"] = gevent.event.Event()
+        self.__dict__["_writable"] = gevent.event.Event()
         try:
             # gevent>=1.0
-            self._state_event = gevent.hub.get_hub().loop.io(
-                on_state_changed_fd, gevent.core.READ)
+            self.__dict__["_state_event"] = gevent.hub.get_hub().loop.io(
+                    on_state_changed_fd, gevent.core.READ)
             self._state_event.start(self._on_state_changed)
         except AttributeError:
             # gevent<1.0
-            self._state_event = gevent.core.read_event(on_state_changed_fd,
-                    self._on_state_changed, persist=True)
+            self.__dict__["_state_event"] = \
+                    gevent.core.read_event(on_state_changed_fd,
+                            self._on_state_changed, persist=True)
 
     def _on_state_changed(self, event=None, _evtype=None):
         if self.closed:

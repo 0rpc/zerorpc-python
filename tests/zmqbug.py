@@ -130,7 +130,7 @@ def server():
 
 
 def client():
-    socket = ZMQSocket(zmq_context, zmq.XREQ)
+    socket = ZMQSocket(zmq_context, zmq.DEALER)
     socket.connect('ipc://zmqbug')
 
     class Cnt:

@@ -32,7 +32,17 @@ import gevent_zmq as zmq
 class Context(zmq.Context):
     _instance = None
 
+    # Since pyzmq 13.0.0 implicit assignation is forbidden. Thankfully we are
+    # allowed to define our attributes here, and initialize them per instance
+    # later.
+    _middlewares = None
+    _hooks = None
+    _msg_id_base = None
+    _msg_id_counter = None
+    _msg_id_counter_stop = None
+
     def __init__(self):
+        super(zmq.Context, self).__init__()
         self._middlewares = []
         self._hooks = {
             'resolve_endpoint': [],

@@ -30,11 +30,11 @@ from testutils import teardown, random_ipc_endpoint
 
 def test_events_channel_client_side():
     endpoint = random_ipc_endpoint()
-    server_events = zerorpc.Events(zmq.XREP)
+    server_events = zerorpc.Events(zmq.ROUTER)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events)
 
@@ -55,11 +55,11 @@ def test_events_channel_client_side():
 
 def test_events_channel_client_side_server_send_many():
     endpoint = random_ipc_endpoint()
-    server_events = zerorpc.Events(zmq.XREP)
+    server_events = zerorpc.Events(zmq.ROUTER)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events)
 
@@ -82,11 +82,11 @@ def test_events_channel_client_side_server_send_many():
 
 def test_events_channel_both_side():
     endpoint = random_ipc_endpoint()
-    server_events = zerorpc.Events(zmq.XREP)
+    server_events = zerorpc.Events(zmq.ROUTER)
     server_events.bind(endpoint)
     server = zerorpc.ChannelMultiplexer(server_events)
 
-    client_events = zerorpc.Events(zmq.XREQ)
+    client_events = zerorpc.Events(zmq.DEALER)
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events)
 
