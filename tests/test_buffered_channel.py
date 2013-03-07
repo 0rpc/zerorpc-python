@@ -42,13 +42,13 @@ def test_close_server_bufchan():
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
     client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
     client_bufchan = zerorpc.BufferedChannel(client_hbchan)
     client_bufchan.emit('openthat', None)
 
     event = server.recv()
     server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
     server_bufchan = zerorpc.BufferedChannel(server_hbchan)
     server_bufchan.recv()
 
@@ -74,13 +74,13 @@ def test_close_client_bufchan():
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
     client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
     client_bufchan = zerorpc.BufferedChannel(client_hbchan)
     client_bufchan.emit('openthat', None)
 
     event = server.recv()
     server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
     server_bufchan = zerorpc.BufferedChannel(server_hbchan)
     server_bufchan.recv()
 
@@ -106,12 +106,12 @@ def test_heartbeat_can_open_channel_server_close():
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
     client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
     client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
     event = server.recv()
     server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
     server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
     gevent.sleep(3)
@@ -136,12 +136,12 @@ def test_heartbeat_can_open_channel_client_close():
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
     client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
     client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
     event = server.recv()
     server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
     server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
     gevent.sleep(3)
@@ -166,12 +166,12 @@ def test_do_some_req_rep():
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
     client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
     client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
     event = server.recv()
     server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
     server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
     def client_do():
@@ -182,7 +182,8 @@ def test_do_some_req_rep():
             assert event.args == (x + x * x,)
         client_bufchan.close()
 
-    client_task = gevent.spawn(client_do)
+    coro_pool = gevent.pool.Pool()
+    coro_pool.spawn(client_do)
 
     def server_do():
         for x in xrange(20):
@@ -191,10 +192,9 @@ def test_do_some_req_rep():
             server_bufchan.emit('OK', (sum(event.args),))
         server_bufchan.close()
 
-    server_task = gevent.spawn(server_do)
+    coro_pool.spawn(server_do)
 
-    server_task.get()
-    client_task.get()
+    coro_pool.join()
     client.close()
     server.close()
 
@@ -212,7 +212,7 @@ def test_do_some_req_rep_lost_server():
     def client_do():
         print 'running'
         client_channel = client.channel()
-        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
         client_bufchan = zerorpc.BufferedChannel(client_hbchan)
         for x in xrange(10):
             client_bufchan.emit('add', (x, x * x))
@@ -224,12 +224,13 @@ def test_do_some_req_rep_lost_server():
             event = client_bufchan.recv()
         client_bufchan.close()
 
-    client_task = gevent.spawn(client_do)
+    coro_pool = gevent.pool.Pool()
+    coro_pool.spawn(client_do)
 
     def server_do():
         event = server.recv()
         server_channel = server.channel(event)
-        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
         server_bufchan = zerorpc.BufferedChannel(server_hbchan)
         for x in xrange(10):
             event = server_bufchan.recv()
@@ -237,10 +238,9 @@ def test_do_some_req_rep_lost_server():
             server_bufchan.emit('OK', (sum(event.args),))
         server_bufchan.close()
 
-    server_task = gevent.spawn(server_do)
+    coro_pool.spawn(server_do)
 
-    server_task.get()
-    client_task.get()
+    coro_pool.join()
     client.close()
     server.close()
 
@@ -257,7 +257,7 @@ def test_do_some_req_rep_lost_client():
 
     def client_do():
         client_channel = client.channel()
-        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
         client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
         for x in xrange(10):
@@ -267,12 +267,13 @@ def test_do_some_req_rep_lost_client():
             assert event.args == (x + x * x,)
         client_bufchan.close()
 
-    client_task = gevent.spawn(client_do)
+    coro_pool = gevent.pool.Pool()
+    coro_pool.spawn(client_do)
 
     def server_do():
         event = server.recv()
         server_channel = server.channel(event)
-        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
         server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
         for x in xrange(10):
@@ -284,10 +285,9 @@ def test_do_some_req_rep_lost_client():
             event = server_bufchan.recv()
         server_bufchan.close()
 
-    server_task = gevent.spawn(server_do)
+    coro_pool.spawn(server_do)
 
-    server_task.get()
-    client_task.get()
+    coro_pool.join()
     client.close()
     server.close()
 
@@ -304,7 +304,7 @@ def test_do_some_req_rep_client_timeout():
 
     def client_do():
         client_channel = client.channel()
-        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
         client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
         with assert_raises(zerorpc.TimeoutExpired):
@@ -315,12 +315,13 @@ def test_do_some_req_rep_client_timeout():
                 assert event.args == (x,)
         client_bufchan.close()
 
-    client_task = gevent.spawn(client_do)
+    coro_pool = gevent.pool.Pool()
+    coro_pool.spawn(client_do)
 
     def server_do():
         event = server.recv()
         server_channel = server.channel(event)
-        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
         server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
         with assert_raises(zerorpc.LostRemote):
@@ -331,10 +332,10 @@ def test_do_some_req_rep_client_timeout():
                 server_bufchan.emit('OK', event.args)
         server_bufchan.close()
 
-    server_task = gevent.spawn(server_do)
 
-    server_task.get()
-    client_task.get()
+    coro_pool.spawn(server_do)
+
+    coro_pool.join()
     client.close()
     server.close()
 
@@ -354,12 +355,12 @@ def test_congestion_control_server_pushing():
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
     client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=1)
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
     client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
     event = server.recv()
     server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=1)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
     server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
     def client_do():
@@ -368,7 +369,8 @@ def test_congestion_control_server_pushing():
             assert event.name == 'coucou'
             assert event.args == x
 
-    client_task = gevent.spawn(client_do)
+    coro_pool = gevent.pool.Pool()
+    coro_pool.spawn(client_do)
 
     def server_do():
         with assert_raises(CongestionError):
@@ -383,12 +385,11 @@ def test_congestion_control_server_pushing():
         for x in xrange(101, 200):
             server_bufchan.emit('coucou', x) # block until receiver is ready
 
-    server_task = gevent.spawn(server_do)
 
-    server_task.get()
-    client_task.get()
+    coro_pool.spawn(server_do)
+
+    coro_pool.join()
     client_bufchan.close()
     client.close()
-    server_task.get()
     server_bufchan.close()
     server.close()
