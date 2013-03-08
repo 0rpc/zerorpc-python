@@ -47,9 +47,9 @@ class Socket(_zmq.Socket):
     def __init__(self, context, socket_type):
         super(Socket, self).__init__(context, socket_type)
         on_state_changed_fd = self.getsockopt(_zmq.FD)
-        # Since pyzmq 13.0.0 implicit assignation is forbidden. Trying to define
-        # the attributes as a class member first do not work either because the
-        # setattr is a non-op! So we are doing it the ugly way.
+        # NOTE: pyzmq 13.0.0 messed up with setattr (they turned it into a
+        # non-op) and you can't assign attributes normally anymore, hence the
+        # tricks with self.__dict__ here
         self.__dict__["_readable"] = gevent.event.Event()
         self.__dict__["_writable"] = gevent.event.Event()
         try:
