@@ -32,15 +32,6 @@ import gevent_zmq as zmq
 class Context(zmq.Context):
     _instance = None
 
-    # Since pyzmq 13.0.0 implicit assignation is forbidden. Thankfully we are
-    # allowed to define our attributes here, and initialize them per instance
-    # later.
-    _middlewares = None
-    _hooks = None
-    _msg_id_base = None
-    _msg_id_counter = None
-    _msg_id_counter_stop = None
-
     def __init__(self):
         super(zmq.Context, self).__init__()
         self._middlewares = []
@@ -56,6 +47,50 @@ class Context(zmq.Context):
             'client_after_request': []
         }
         self._reset_msgid()
+
+    # NOTE: pyzmq 13.0.0 messed up with setattr (they turned it into a
+    # non-op) and you can't assign attributes normally anymore, hence the
+    # tricks with self.__dict__ here
+
+    @property
+    def _middlewares(self):
+        return self.__dict__['_middlewares']
+
+    @_middlewares.setter
+    def _middlewares(self, value):
+        self.__dict__['_middlewares'] = value
+
+    @property
+    def _hooks(self):
+        return self.__dict__['_hooks']
+
+    @_hooks.setter
+    def _hooks(self, value):
+        self.__dict__['_hooks'] = value
+
+    @property
+    def _msg_id_base(self):
+        return self.__dict__['_msg_id_base']
+
+    @_msg_id_base.setter
+    def _msg_id_base(self, value):
+        self.__dict__['_msg_id_base'] = value
+
+    @property
+    def _msg_id_counter(self):
+        return self.__dict__['_msg_id_counter']
+
+    @_msg_id_counter.setter
+    def _msg_id_counter(self, value):
+        self.__dict__['_msg_id_counter'] = value
+
+    @property
+    def _msg_id_counter_stop(self):
+        return self.__dict__['_msg_id_counter_stop']
+
+    @_msg_id_counter_stop.setter
+    def _msg_id_counter_stop(self, value):
+        self.__dict__['_msg_id_counter_stop'] = value
 
     @staticmethod
     def get_instance():
