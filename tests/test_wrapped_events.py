@@ -24,6 +24,7 @@
 
 
 import random
+import gevent
 
 from zerorpc import zmq
 import zerorpc
@@ -74,11 +75,14 @@ def test_multiple_sub_events():
 
     client_channel1 = client.channel()
     client_channel_events1 = zerorpc.WrappedEvents(client_channel1)
-    client_channel2 = client.channel()
+    client_channel2 = zerorpc.BufferedChannel(client.channel())
     client_channel_events2 = zerorpc.WrappedEvents(client_channel2)
-    client_channel_events1.emit('coucou1', 43)
-    client_channel_events2.emit('coucou2', 44)
-    client_channel_events2.emit('another', 42)
+
+    def emitstuff():
+        client_channel_events1.emit('coucou1', 43)
+        client_channel_events2.emit('coucou2', 44)
+        client_channel_events2.emit('another', 42)
+    gevent.spawn(emitstuff)
 
     event = server.recv()
     print event
@@ -89,7 +93,7 @@ def test_multiple_sub_events():
     server_channel = server.channel(event)
     server_channel_events = zerorpc.WrappedEvents(server_channel)
     event = server_channel_events.recv()
-    print event
+    print 'ch1:', event
     assert event.name == 'coucou1'
     assert event.args == 43
 
@@ -100,14 +104,16 @@ def test_multiple_sub_events():
     subevent = event.args
     print 'subevent:', subevent
     server_channel = server.channel(event)
-    server_channel_events = zerorpc.WrappedEvents(server_channel)
+
+    server_channel_events = zerorpc.BufferedChannel(server_channel)
+    server_channel_events = zerorpc.WrappedEvents(server_channel_events)
     event = server_channel_events.recv()
-    print event
+    print 'ch2:', event
     assert event.name == 'coucou2'
     assert event.args == 44
 
     event = server_channel_events.recv()
-    print event
+    print 'ch2:', event
     assert event.name == 'another'
     assert event.args == 42
 
