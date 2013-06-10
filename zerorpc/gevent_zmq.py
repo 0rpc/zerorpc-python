@@ -70,7 +70,14 @@ class Socket(_zmq.Socket):
             self._readable.set()
             return
 
-        events = self.getsockopt(_zmq.EVENTS)
+        while True:
+            try:
+                events = self.getsockopt(_zmq.EVENTS)
+                break
+            except ZMQError as e:
+                if e.errno not in (_zmq.EAGAIN, errno.EINTR):
+                    raise
+
         if events & _zmq.POLLOUT:
             self._writable.set()
         if events & _zmq.POLLIN:
