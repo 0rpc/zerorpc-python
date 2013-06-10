@@ -33,6 +33,7 @@ import zmq as _zmq
 import gevent.event
 import gevent.core
 import sys
+import errno
 
 class Context(_zmq.Context):
 
@@ -104,7 +105,7 @@ class Socket(_zmq.Socket):
                 self._on_state_changed()
                 return msg
             except _zmq.ZMQError, e:
-                if e.errno != _zmq.EAGAIN:
+                if e.errno not in (_zmq.EAGAIN, errno.EINTR):
                     raise
             self._writable.clear()
             # The following sleep(0) force gevent to switch out to another
@@ -140,7 +141,7 @@ class Socket(_zmq.Socket):
                 self._on_state_changed()
                 return msg
             except _zmq.ZMQError, e:
-                if e.errno != _zmq.EAGAIN:
+                if e.errno not in (_zmq.EAGAIN, errno.EINTR):
                     raise
             self._readable.clear()
             # The following sleep(0) force gevent to switch out to another
