@@ -47,7 +47,7 @@ def test_sub_events():
 
     event = server.recv()
     print event
-    assert type(event.args) is tuple
+    assert type(event.args) is list
     assert event.name == 'w'
     subevent = event.args
     print 'subevent:', subevent
@@ -86,7 +86,7 @@ def test_multiple_sub_events():
 
     event = server.recv()
     print event
-    assert type(event.args) is tuple
+    assert type(event.args) is list
     assert event.name == 'w'
     subevent = event.args
     print 'subevent:', subevent
@@ -99,7 +99,7 @@ def test_multiple_sub_events():
 
     event = server.recv()
     print event
-    assert type(event.args) is tuple
+    assert type(event.args) is list
     assert event.name == 'w'
     subevent = event.args
     print 'subevent:', subevent
