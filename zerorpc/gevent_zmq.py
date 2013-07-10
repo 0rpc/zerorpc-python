@@ -34,6 +34,9 @@ import gevent.event
 import gevent.core
 import sys
 import errno
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 class Context(_zmq.Context):
 
@@ -125,8 +128,8 @@ class Socket(_zmq.Socket):
             gevent.sleep(0)
             while not self._writable.wait(timeout=1):
                 if self.getsockopt(_zmq.EVENTS) & _zmq.POLLOUT:
-                    print>>sys.stderr, "/!\\ gevent_zeromq BUG /!\\ " \
-                        "catching up after missing event (SEND) /!\\"
+                    logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
+                        "catching up after missing event (SEND) /!\\")
                     break
 
     def recv(self, flags=0, copy=True, track=False):
@@ -161,6 +164,6 @@ class Socket(_zmq.Socket):
             gevent.sleep(0)
             while not self._readable.wait(timeout=1):
                 if self.getsockopt(_zmq.EVENTS) & _zmq.POLLIN:
-                    print>>sys.stderr, "/!\\ gevent_zeromq BUG /!\\ " \
-                        "catching up after missing event (RECV) /!\\"
+                    logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
+                        "catching up after missing event (RECV) /!\\")
                     break

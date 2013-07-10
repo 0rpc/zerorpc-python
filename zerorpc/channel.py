@@ -32,6 +32,11 @@ import gevent.coros
 
 from .exceptions import TimeoutExpired
 
+from logging import getLogger
+
+logger = getLogger(__name__)
+
+
 
 class ChannelMultiplexer(object):
     def __init__(self, events, ignore_broadcast=False):
@@ -76,9 +81,9 @@ class ChannelMultiplexer(object):
             try:
                 event = self._events.recv()
             except Exception as e:
-                print >> sys.stderr, \
-                        'zerorpc.ChannelMultiplexer,', \
-                        'ignoring error on recv: {0}'.format(e)
+                logger.error( \
+                        'zerorpc.ChannelMultiplexer, ' + \
+                        'ignoring error on recv: {0}'.format(e))
                 continue
             channel_id = event.header.get('response_to', None)
 
@@ -91,10 +96,10 @@ class ChannelMultiplexer(object):
                 queue = self._broadcast_queue
 
             if queue is None:
-                print >> sys.stderr, \
-                        'zerorpc.ChannelMultiplexer,', \
-                        'unable to route event:', \
-                        event.__str__(ignore_args=True)
+                logger.error( \
+                        'zerorpc.ChannelMultiplexer, ' + \
+                        'unable to route event: ' + \
+                        event.__str__(ignore_args=True))
             else:
                 queue.put(event)
 
@@ -210,9 +215,9 @@ class BufferedChannel(object):
                 try:
                     self._remote_queue_open_slots += int(event.args[0])
                 except Exception as e:
-                    print >> sys.stderr, \
-                            'gevent_zerorpc.BufferedChannel._recver,', \
-                            'exception:', e
+                    logger.error( \
+                            'gevent_zerorpc.BufferedChannel._recver, ' + \
+                            'exception: ' + repr(e))
                 if self._remote_queue_open_slots > 0:
                     self._remote_can_recv.set()
             elif self._input_queue.qsize() == self._input_queue_size:
