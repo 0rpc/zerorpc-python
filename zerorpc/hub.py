@@ -33,7 +33,6 @@ def run_hub(args):
 
 def main():
     args = parser.parse_args()
-    print args
 
     if not args.client or not args.server:
         parser.print_help()
