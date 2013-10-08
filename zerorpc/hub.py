@@ -18,6 +18,7 @@ parser.add_argument('-s', '--server', action='append', metavar='server',
                     help='specify address to listen for server requests. \
                     Can be specified multiple times')
 
+
 def run_hub(args):
     context = zmq.Context()
     router = context.socket(zmq.ROUTER)
@@ -30,6 +31,7 @@ def run_hub(args):
         dealer.bind(server)
 
     return zmq.device(zmq.QUEUE, router, dealer)
+
 
 def main():
     args = parser.parse_args()
