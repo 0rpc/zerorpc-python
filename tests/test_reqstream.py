@@ -50,7 +50,7 @@ def test_rcp_streaming():
     client.connect(endpoint)
 
     r = client.range(10)
-    assert r == list(range(10))
+    assert list(r) == list(range(10))
 
     r = client.xrange(10)
     assert getattr(r, 'next', None) is not None

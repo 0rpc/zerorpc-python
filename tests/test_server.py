@@ -53,13 +53,13 @@ def test_server_manual():
     client_channel = client.channel()
     client_channel.emit('lolita', tuple())
     event = client_channel.recv()
-    assert event.args == [42]
+    assert list(event.args) == [42]
     client_channel.close()
 
     client_channel = client.channel()
     client_channel.emit('add', (1, 2))
     event = client_channel.recv()
-    assert event.args == [3]
+    assert list(event.args) == [3]
     client_channel.close()
     srv.stop()
 

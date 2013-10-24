@@ -169,7 +169,7 @@ def test_do_some_req_rep():
             client_hbchan.emit('add', (x, x * x))
             event = client_hbchan.recv()
             assert event.name == 'OK'
-            assert event.args == [x + x * x]
+            assert list(event.args) == [x + x * x]
         client_hbchan.close()
 
     client_task = gevent.spawn(client_do)
@@ -207,7 +207,7 @@ def test_do_some_req_rep_lost_server():
             client_hbchan.emit('add', (x, x * x))
             event = client_hbchan.recv()
             assert event.name == 'OK'
-            assert event.args == [x + x * x]
+            assert list(event.args) == [x + x * x]
         client_hbchan.emit('add', (x, x * x))
         with assert_raises(zerorpc.LostRemote):
             event = client_hbchan.recv()
@@ -251,7 +251,7 @@ def test_do_some_req_rep_lost_client():
             client_hbchan.emit('add', (x, x * x))
             event = client_hbchan.recv()
             assert event.name == 'OK'
-            assert event.args == [x + x * x]
+            assert list(event.args) == [x + x * x]
         client_hbchan.close()
 
     client_task = gevent.spawn(client_do)
@@ -297,7 +297,7 @@ def test_do_some_req_rep_client_timeout():
                 client_hbchan.emit('sleep', (x,))
                 event = client_hbchan.recv(timeout=3)
                 assert event.name == 'OK'
-                assert event.args == [x]
+                assert list(event.args) == [x]
         client_hbchan.close()
 
     client_task = gevent.spawn(client_do)

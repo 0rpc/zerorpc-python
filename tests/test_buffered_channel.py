@@ -179,7 +179,7 @@ def test_do_some_req_rep():
             client_bufchan.emit('add', (x, x * x))
             event = client_bufchan.recv()
             assert event.name == 'OK'
-            assert event.args == [x + x * x]
+            assert list(event.args) == [x + x * x]
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -218,7 +218,7 @@ def test_do_some_req_rep_lost_server():
             client_bufchan.emit('add', (x, x * x))
             event = client_bufchan.recv()
             assert event.name == 'OK'
-            assert event.args == [x + x * x]
+            assert list(event.args) == [x + x * x]
         client_bufchan.emit('add', (x, x * x))
         with assert_raises(zerorpc.LostRemote):
             event = client_bufchan.recv()
@@ -264,7 +264,7 @@ def test_do_some_req_rep_lost_client():
             client_bufchan.emit('add', (x, x * x))
             event = client_bufchan.recv()
             assert event.name == 'OK'
-            assert event.args == [x + x * x]
+            assert list(event.args) == [x + x * x]
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -312,7 +312,7 @@ def test_do_some_req_rep_client_timeout():
                 client_bufchan.emit('sleep', (x,))
                 event = client_bufchan.recv(timeout=3)
                 assert event.name == 'OK'
-                assert event.args == [x]
+                assert list(event.args) == [x]
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
