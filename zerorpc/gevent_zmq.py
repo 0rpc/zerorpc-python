@@ -137,8 +137,8 @@ class Socket(_zmq.Socket):
             while not self._writable.wait(timeout=1):
                 try:
                     if self.getsockopt(_zmq.EVENTS) & _zmq.POLLOUT:
-						logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
-							"catching up after missing event (SEND) /!\\")
+                        logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
+                                "catching up after missing event (SEND) /!\\")
                         break
                 except ZMQError as e:
                     if e.errno not in (_zmq.EAGAIN, errno.EINTR):
@@ -176,10 +176,10 @@ class Socket(_zmq.Socket):
             gevent.sleep(0)
             while not self._readable.wait(timeout=1):
                 try:
-					if self.getsockopt(_zmq.EVENTS) & _zmq.POLLIN:
-						logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
-							"catching up after missing event (RECV) /!\\")
-						break
+                    if self.getsockopt(_zmq.EVENTS) & _zmq.POLLIN:
+                        logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
+                                "catching up after missing event (RECV) /!\\")
+                        break
                 except ZMQError as e:
                     if e.errno not in (_zmq.EAGAIN, errno.EINTR):
                         raise
