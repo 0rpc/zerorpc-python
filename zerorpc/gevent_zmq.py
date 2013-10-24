@@ -96,6 +96,14 @@ class Socket(_zmq.Socket):
                 self._state_event.cancel()
         super(Socket, self).close()
 
+    def connect(self, *args, **kwargs):
+        while True:
+            try:
+                return super(Socket, self).connect(*args, **kwargs)
+            except _zmq.ZMQError, e:
+                if e.errno not in (_zmq.EAGAIN, errno.EINTR):
+                    raise
+
     def send(self, data, flags=0, copy=True, track=False):
         if flags & _zmq.NOBLOCK:
             return super(Socket, self).send(data, flags, copy, track)
@@ -127,10 +135,14 @@ class Socket(_zmq.Socket):
             # the same CPU load, you get a better throughput (roughly 18.75%).
             gevent.sleep(0)
             while not self._writable.wait(timeout=1):
-                if self.getsockopt(_zmq.EVENTS) & _zmq.POLLOUT:
-                    logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
-                        "catching up after missing event (SEND) /!\\")
-                    break
+                try:
+                    if self.getsockopt(_zmq.EVENTS) & _zmq.POLLOUT:
+						logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
+							"catching up after missing event (SEND) /!\\")
+                        break
+                except ZMQError as e:
+                    if e.errno not in (_zmq.EAGAIN, errno.EINTR):
+                        raise
 
     def recv(self, flags=0, copy=True, track=False):
         if flags & _zmq.NOBLOCK:
@@ -163,7 +175,11 @@ class Socket(_zmq.Socket):
             # the same CPU load, you get a better throughput (roughly 18.75%).
             gevent.sleep(0)
             while not self._readable.wait(timeout=1):
-                if self.getsockopt(_zmq.EVENTS) & _zmq.POLLIN:
-                    logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
-                        "catching up after missing event (RECV) /!\\")
-                    break
+                try:
+					if self.getsockopt(_zmq.EVENTS) & _zmq.POLLIN:
+						logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
+							"catching up after missing event (RECV) /!\\")
+						break
+                except ZMQError as e:
+                    if e.errno not in (_zmq.EAGAIN, errno.EINTR):
+                        raise
