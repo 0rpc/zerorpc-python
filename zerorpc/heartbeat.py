@@ -28,7 +28,7 @@ import gevent.pool
 import gevent.queue
 import gevent.event
 import gevent.local
-import gevent.coros
+import gevent.lock
 
 from .exceptions import *
 
@@ -38,7 +38,7 @@ class HeartBeatOnChannel(object):
     def __init__(self, channel, freq=5, passive=False):
         self._channel = channel
         self._heartbeat_freq = freq
-        self._input_queue = gevent.queue.Queue(maxsize=0)
+        self._input_queue = gevent.queue.Channel()
         self._remote_last_hb = None
         self._lost_remote = False
         self._recv_task = gevent.spawn(self._recver)

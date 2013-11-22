@@ -28,7 +28,7 @@ import gevent.pool
 import gevent.queue
 import gevent.event
 import gevent.local
-import gevent.coros
+import gevent.lock
 
 from .exceptions import TimeoutExpired
 

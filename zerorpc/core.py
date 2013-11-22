@@ -29,7 +29,7 @@ import gevent.pool
 import gevent.queue
 import gevent.event
 import gevent.local
-import gevent.coros
+import gevent.lock
 
 import gevent_zmq as zmq
 from .exceptions import TimeoutExpired, RemoteError, LostRemote
