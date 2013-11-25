@@ -108,15 +108,15 @@ your server to act as a kind of worker, and connect to a hub or queue which
 will dispatch requests. You can achieve this by swapping "--bind" and
 "--connect"::
 
-  $ zerorpc --bind tcp://*:1234 localtime
+  $ zerorpc --bind tcp://*:1234 strftime %Y/%m/%d
 
-We now have "something" wanting to call the "localtime" function, and waiting
+We now have "something" wanting to call the "strftime" function, and waiting
 for a worker to connect to it. Let's start the worker::
 
-  $ zerorpc --server tcp://*:1234 time
+  $ zerorpc --server tcp://127.0.0.1:1234 time
 
 The worker will connect to the listening client and ask him "what should I 
-do?"; the client will send the "localtime" function call; the worker will
+do?"; the client will send the "strftime" function call; the worker will
 execute it and return the result. The first program will display the
 local time and exit. The worker will remain running.
 
