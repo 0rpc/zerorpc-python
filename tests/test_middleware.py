@@ -27,7 +27,8 @@ from nose.tools import assert_raises
 import gevent
 import gevent.local
 import random
-import md5
+import hashlib
+import sys
 
 from zerorpc import zmq
 import zerorpc
@@ -94,8 +95,11 @@ def test_resolve_endpoint_events():
             return 'world'
 
     srv = Srv(heartbeat=1, context=c)
-    with assert_raises(zmq.ZMQError):
-        srv.bind('some_service')
+    if sys.version_info < (2, 7):
+        assert_raises(zmq.ZMQError, srv.bind, 'some_service')
+    else:
+        with assert_raises(zmq.ZMQError):
+            srv.bind('some_service')
 
     cnt = c.register_middleware(Resolver())
     assert cnt == 1
@@ -129,7 +133,7 @@ class Tracer:
     def get_task_context(self):
         if self.trace_id is None:
             # just an ugly code to generate a beautiful little hash.
-            self._locals.trace_id = '<{0}>'.format(md5.md5(
+            self._locals.trace_id = '<{0}>'.format(hashlib.md5(
                     str(random.random())[3:]
                     ).hexdigest()[0:6].upper())
             print self._identity, 'get_task_context! [make a new one]', self.trace_id
