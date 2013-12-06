@@ -28,7 +28,7 @@ import gevent.pool
 import gevent.queue
 import gevent.event
 import gevent.local
-import gevent.coros
+import gevent.lock
 
 
 import gevent_zmq as zmq
@@ -39,7 +39,7 @@ class Sender(object):
 
     def __init__(self, socket):
         self._socket = socket
-        self._send_queue = gevent.queue.Queue(maxsize=0)
+        self._send_queue = gevent.queue.Channel()
         self._send_task = gevent.spawn(self._sender)
 
     def __del__(self):
@@ -72,7 +72,7 @@ class Receiver(object):
 
     def __init__(self, socket):
         self._socket = socket
-        self._recv_queue = gevent.queue.Queue(maxsize=0)
+        self._recv_queue = gevent.queue.Channel()
         self._recv_task = gevent.spawn(self._recver)
 
     def __del__(self):
