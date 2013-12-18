@@ -29,7 +29,7 @@ import gevent.pool
 import gevent.queue
 import gevent.event
 import gevent.local
-import gevent.coros
+import gevent.lock
 
 import gevent_zmq as zmq
 from .exceptions import TimeoutExpired, RemoteError, LostRemote
@@ -39,6 +39,10 @@ from .heartbeat import HeartBeatOnChannel
 from .context import Context
 from .decorators import DecoratorBase, rep
 import patterns
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 
 class ServerBase(object):
 
@@ -118,7 +122,7 @@ class ServerBase(object):
         return self._methods[method](*args)
 
     def _print_traceback(self, protocol_v1, exc_infos):
-        traceback.print_exception(*exc_infos, file=sys.stderr)
+        logger.exception('')
 
         exc_type, exc_value, exc_traceback = exc_infos
         if protocol_v1:
@@ -337,7 +341,7 @@ class Puller(SocketBase):
             except Exception:
                 exc_infos = sys.exc_info()
                 try:
-                    traceback.print_exception(*exc_infos, file=sys.stderr)
+                    logger.exception('')
                     self._context.hook_server_inspect_exception(event, None, exc_infos)
                 finally:
                     del exc_infos

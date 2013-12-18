@@ -25,6 +25,7 @@
 
 from nose.tools import assert_raises
 import gevent
+import sys
 
 from zerorpc import zmq
 import zerorpc
@@ -55,8 +56,11 @@ def test_close_server_bufchan():
     gevent.sleep(3)
     print 'CLOSE SERVER SOCKET!!!'
     server_bufchan.close()
-    with assert_raises(zerorpc.LostRemote):
-        client_bufchan.recv()
+    if sys.version_info < (2, 7):
+        assert_raises(zerorpc.LostRemote, client_bufchan.recv)
+    else:
+        with assert_raises(zerorpc.LostRemote):
+            client_bufchan.recv()
     print 'CLIENT LOST SERVER :)'
     client_bufchan.close()
     server.close()
@@ -87,8 +91,11 @@ def test_close_client_bufchan():
     gevent.sleep(3)
     print 'CLOSE CLIENT SOCKET!!!'
     client_bufchan.close()
-    with assert_raises(zerorpc.LostRemote):
-        server_bufchan.recv()
+    if sys.version_info < (2, 7):
+        assert_raises(zerorpc.LostRemote, client_bufchan.recv)
+    else:
+        with assert_raises(zerorpc.LostRemote):
+            client_bufchan.recv()
     print 'SERVER LOST CLIENT :)'
     server_bufchan.close()
     server.close()
@@ -117,8 +124,11 @@ def test_heartbeat_can_open_channel_server_close():
     gevent.sleep(3)
     print 'CLOSE SERVER SOCKET!!!'
     server_bufchan.close()
-    with assert_raises(zerorpc.LostRemote):
-        client_bufchan.recv()
+    if sys.version_info < (2, 7):
+        assert_raises(zerorpc.LostRemote, client_bufchan.recv)
+    else:
+        with assert_raises(zerorpc.LostRemote):
+            client_bufchan.recv()
     print 'CLIENT LOST SERVER :)'
     client_bufchan.close()
     server.close()
@@ -148,8 +158,11 @@ def test_heartbeat_can_open_channel_client_close():
     print 'CLOSE CLIENT SOCKET!!!'
     client_bufchan.close()
     client.close()
-    with assert_raises(zerorpc.LostRemote):
-        server_bufchan.recv()
+    if sys.version_info < (2, 7):
+        assert_raises(zerorpc.LostRemote, client_bufchan.recv)
+    else:
+        with assert_raises(zerorpc.LostRemote):
+            client_bufchan.recv()
     print 'SERVER LOST CLIENT :)'
     server_bufchan.close()
     server.close()
@@ -179,7 +192,7 @@ def test_do_some_req_rep():
             client_bufchan.emit('add', (x, x * x))
             event = client_bufchan.recv()
             assert event.name == 'OK'
-            assert event.args == (x + x * x,)
+            assert list(event.args) == [x + x * x]
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -218,10 +231,13 @@ def test_do_some_req_rep_lost_server():
             client_bufchan.emit('add', (x, x * x))
             event = client_bufchan.recv()
             assert event.name == 'OK'
-            assert event.args == (x + x * x,)
+            assert list(event.args) == [x + x * x]
         client_bufchan.emit('add', (x, x * x))
-        with assert_raises(zerorpc.LostRemote):
-            event = client_bufchan.recv()
+        if sys.version_info < (2, 7):
+            assert_raises(zerorpc.LostRemote, client_bufchan.recv)
+        else:
+            with assert_raises(zerorpc.LostRemote):
+                client_bufchan.recv()
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -264,7 +280,7 @@ def test_do_some_req_rep_lost_client():
             client_bufchan.emit('add', (x, x * x))
             event = client_bufchan.recv()
             assert event.name == 'OK'
-            assert event.args == (x + x * x,)
+            assert list(event.args) == [x + x * x]
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -281,8 +297,11 @@ def test_do_some_req_rep_lost_client():
             assert event.name == 'add'
             server_bufchan.emit('OK', (sum(event.args),))
 
-        with assert_raises(zerorpc.LostRemote):
-            event = server_bufchan.recv()
+        if sys.version_info < (2, 7):
+            assert_raises(zerorpc.LostRemote, server_bufchan.recv)
+        else:
+            with assert_raises(zerorpc.LostRemote):
+                server_bufchan.recv()
         server_bufchan.close()
 
     coro_pool.spawn(server_do)
@@ -307,12 +326,21 @@ def test_do_some_req_rep_client_timeout():
         client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
         client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
-        with assert_raises(zerorpc.TimeoutExpired):
-            for x in xrange(10):
-                client_bufchan.emit('sleep', (x,))
-                event = client_bufchan.recv(timeout=3)
-                assert event.name == 'OK'
-                assert event.args == (x,)
+        if sys.version_info < (2, 7):
+            def _do_with_assert_raises():
+                for x in xrange(10):
+                    client_bufchan.emit('sleep', (x,))
+                    event = client_bufchan.recv(timeout=3)
+                    assert event.name == 'OK'
+                    assert list(event.args) == [x]
+            assert_raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
+        else:
+            with assert_raises(zerorpc.TimeoutExpired):
+                for x in xrange(10):
+                    client_bufchan.emit('sleep', (x,))
+                    event = client_bufchan.recv(timeout=3)
+                    assert event.name == 'OK'
+                    assert list(event.args) == [x]
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -324,12 +352,21 @@ def test_do_some_req_rep_client_timeout():
         server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
         server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
-        with assert_raises(zerorpc.LostRemote):
-            for x in xrange(20):
-                event = server_bufchan.recv()
-                assert event.name == 'sleep'
-                gevent.sleep(event.args[0])
-                server_bufchan.emit('OK', event.args)
+        if sys.version_info < (2, 7):
+            def _do_with_assert_raises():
+                for x in xrange(20):
+                    event = server_bufchan.recv()
+                    assert event.name == 'sleep'
+                    gevent.sleep(event.args[0])
+                    server_bufchan.emit('OK', event.args)
+            assert_raises(zerorpc.LostRemote, _do_with_assert_raises)
+        else:
+            with assert_raises(zerorpc.LostRemote):
+                for x in xrange(20):
+                    event = server_bufchan.recv()
+                    assert event.name == 'sleep'
+                    gevent.sleep(event.args[0])
+                    server_bufchan.emit('OK', event.args)
         server_bufchan.close()
 
 
@@ -373,15 +410,29 @@ def test_congestion_control_server_pushing():
     coro_pool.spawn(client_do)
 
     def server_do():
-        with assert_raises(CongestionError):
-            for x in xrange(200):
-                if server_bufchan.emit('coucou', x, block=False) == False:
-                    raise CongestionError()  # will fail when x == 1
+        if sys.version_info < (2, 7):
+            def _do_with_assert_raises():
+                for x in xrange(200):
+                    if not server_bufchan.emit('coucou', x, block=False):
+                        raise CongestionError()  # will fail when x == 1
+            assert_raises(CongestionError, _do_with_assert_raises)
+        else:
+            with assert_raises(CongestionError):
+                for x in xrange(200):
+                    if not server_bufchan.emit('coucou', x, block=False):
+                        raise CongestionError()  # will fail when x == 1
         server_bufchan.emit('coucou', 1)  # block until receiver is ready
-        with assert_raises(CongestionError):
-            for x in xrange(2, 200):
-                if server_bufchan.emit('coucou', x, block=False) == False:
-                    raise CongestionError()  # will fail when x == 100
+        if sys.version_info < (2, 7):
+            def _do_with_assert_raises():
+                for x in xrange(2, 200):
+                    if not server_bufchan.emit('coucou', x, block=False):
+                        raise CongestionError()  # will fail when x == 100
+            assert_raises(CongestionError, _do_with_assert_raises)
+        else:
+            with assert_raises(CongestionError):
+                for x in xrange(2, 200):
+                    if not server_bufchan.emit('coucou', x, block=False):
+                        raise CongestionError()  # will fail when x == 100
         for x in xrange(101, 200):
             server_bufchan.emit('coucou', x) # block until receiver is ready
 

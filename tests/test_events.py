@@ -73,7 +73,7 @@ def test_event():
 
     assert unpacked.name == 'mylittleevent4'
     assert unpacked.header['message_id'] == 3
-    assert unpacked.args == ('b', 21)
+    assert list(unpacked.args) == ['b', 21]
 
     event = zerorpc.Event('mylittleevent5', ('c', 24, True),
             header={'lol': 'rofl'}, context=None)
@@ -104,7 +104,7 @@ def test_events_req_rep():
     event = server.recv()
     print event
     assert event.name == 'myevent'
-    assert event.args == ('arg1',)
+    assert list(event.args) == ['arg1']
 
 
 def test_events_req_rep2():
@@ -120,13 +120,13 @@ def test_events_req_rep2():
         event = server.recv()
         print event
         assert event.name == 'myevent' + str(i)
-        assert event.args == (i,)
+        assert list(event.args) == [i]
 
         server.emit('answser' + str(i * 2), (i * 2,))
         event = client.recv()
         print event
         assert event.name == 'answser' + str(i * 2)
-        assert event.args == (i * 2,)
+        assert list(event.args) == [i * 2]
 
 
 def test_events_dealer_router():
@@ -142,14 +142,14 @@ def test_events_dealer_router():
         event = server.recv()
         print event
         assert event.name == 'myevent' + str(i)
-        assert event.args == (i,)
+        assert list(event.args) == [i]
 
         server.emit('answser' + str(i * 2), (i * 2,),
                 xheader=dict(zmqid=event.header['zmqid']))
         event = client.recv()
         print event
         assert event.name == 'answser' + str(i * 2)
-        assert event.args == (i * 2,)
+        assert list(event.args) == [i * 2]
 
 
 def test_events_push_pull():
@@ -167,4 +167,4 @@ def test_events_push_pull():
         event = server.recv()
         print event
         assert event.name == 'myevent'
-        assert event.args == (x,)
+        assert list(event.args) == [x]

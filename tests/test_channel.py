@@ -43,14 +43,14 @@ def test_events_channel_client_side():
 
     event = server.recv()
     print event
-    assert event.args == (42,)
+    assert list(event.args) == [42]
     assert event.header.get('zmqid', None) is not None
 
     server.emit('someanswer', (21,),
             xheader=dict(response_to=event.header['message_id'],
                 zmqid=event.header['zmqid']))
     event = client_channel.recv()
-    assert event.args == (21,)
+    assert list(event.args) == [21]
 
 
 def test_events_channel_client_side_server_send_many():
@@ -68,7 +68,7 @@ def test_events_channel_client_side_server_send_many():
 
     event = server.recv()
     print event
-    assert event.args == (10,)
+    assert list(event.args) == [10]
     assert event.header.get('zmqid', None) is not None
 
     for x in xrange(10):
@@ -77,7 +77,7 @@ def test_events_channel_client_side_server_send_many():
                     zmqid=event.header['zmqid']))
     for x in xrange(10):
         event = client_channel.recv()
-        assert event.args == (x,)
+        assert list(event.args) == [x]
 
 
 def test_events_channel_both_side():
@@ -95,20 +95,20 @@ def test_events_channel_both_side():
 
     event = server.recv()
     print event
-    assert event.args == (42,)
+    assert list(event.args) == [42]
     assert event.name == 'openthat'
 
     server_channel = server.channel(event)
     server_channel.emit('test', (21,))
 
     event = client_channel.recv()
-    assert event.args == (21,)
+    assert list(event.args) == [21]
     assert event.name == 'test'
 
     server_channel.emit('test', (22,))
 
     event = client_channel.recv()
-    assert event.args == (22,)
+    assert list(event.args) == [22]
     assert event.name == 'test'
 
     server_events.close()

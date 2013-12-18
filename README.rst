@@ -108,15 +108,15 @@ your server to act as a kind of worker, and connect to a hub or queue which
 will dispatch requests. You can achieve this by swapping "--bind" and
 "--connect"::
 
-  $ zerorpc --bind tcp://*:1234 localtime
+  $ zerorpc --bind tcp://*:1234 strftime %Y/%m/%d
 
-We now have "something" wanting to call the "localtime" function, and waiting
+We now have "something" wanting to call the "strftime" function, and waiting
 for a worker to connect to it. Let's start the worker::
 
-  $ zerorpc --server tcp://*:1234 time
+  $ zerorpc --server tcp://127.0.0.1:1234 time
 
 The worker will connect to the listening client and ask him "what should I 
-do?"; the client will send the "localtime" function call; the worker will
+do?"; the client will send the "strftime" function call; the worker will
 execute it and return the result. The first program will display the
 local time and exit. The worker will remain running.
 
@@ -186,11 +186,11 @@ Let's save this code to *cooler.py* and run it::
 
 Now, in another terminal, let's try connecting to our awesome zeroservice::
 
-  $ zerorpc -j tcp://:4242 add_42 1
+  $ zerorpc -j tcp://localhost:4242 add_42 1
   43
-  $ zerorpc tcp://:4242 add_man 'I own a mint-condition Volkswagen Golf'
+  $ zerorpc tcp://localhost:4242 add_man 'I own a mint-condition Volkswagen Golf'
   "I own a mint-condition Volkswagen Golf, man!"
-  $ zerorpc tcp://:4242 boat 'I own a mint-condition Volkswagen Golf, man!'
+  $ zerorpc tcp://localhost:4242 boat 'I own a mint-condition Volkswagen Golf, man!'
   "I'm on a boat!"
 
 

@@ -25,6 +25,7 @@
 
 from nose.tools import assert_raises
 import gevent
+import sys
 
 from zerorpc import zmq
 import zerorpc
@@ -53,13 +54,13 @@ def test_server_manual():
     client_channel = client.channel()
     client_channel.emit('lolita', tuple())
     event = client_channel.recv()
-    assert event.args == (42,)
+    assert list(event.args) == [42]
     client_channel.close()
 
     client_channel = client.channel()
     client_channel.emit('add', (1, 2))
     event = client_channel.recv()
-    assert event.args == (3,)
+    assert list(event.args) == [3]
     client_channel.close()
     srv.stop()
 
@@ -108,8 +109,11 @@ def test_client_server_client_timeout():
     client = zerorpc.Client(timeout=2)
     client.connect(endpoint)
 
-    with assert_raises(zerorpc.TimeoutExpired):
-        print client.add(1, 4)
+    if sys.version_info < (2, 7):
+        assert_raises(zerorpc.TimeoutExpired, client.add, 1, 4)
+    else:
+        with assert_raises(zerorpc.TimeoutExpired):
+            print client.add(1, 4)
     client.close()
     srv.close()
 
@@ -129,8 +133,13 @@ def test_client_server_exception():
     client = zerorpc.Client(timeout=2)
     client.connect(endpoint)
 
-    with assert_raises(zerorpc.RemoteError):
-        print client.raise_something(42)
+    if sys.version_info < (2, 7):
+        def _do_with_assert_raises():
+            print client.raise_something(42)
+        assert_raises(zerorpc.RemoteError, _do_with_assert_raises)
+    else:
+        with assert_raises(zerorpc.RemoteError):
+            print client.raise_something(42)
     assert client.raise_something(range(5)) == 4
     client.close()
     srv.close()
@@ -151,8 +160,13 @@ def test_client_server_detailed_exception():
     client = zerorpc.Client(timeout=2)
     client.connect(endpoint)
 
-    with assert_raises(zerorpc.RemoteError):
-        print client.raise_error()
+    if sys.version_info < (2, 7):
+        def _do_with_assert_raises():
+            print client.raise_error()
+        assert_raises(zerorpc.RemoteError, _do_with_assert_raises)
+    else:
+        with assert_raises(zerorpc.RemoteError):
+            print client.raise_error()
     try:
         client.raise_error()
     except zerorpc.RemoteError as e:
