@@ -226,7 +226,8 @@ class Events(object):
             r.append(self._socket.bind(endpoint_))
         return r
 
-    def create_event(self, name, args, xheader={}):
+    def create_event(self, name, args, xheader=None):
+        xheader = {} if xheader is None else xheader
         event = Event(name, args, context=self._context)
         for k, v in xheader.items():
             if k == 'zmqid':
@@ -244,7 +245,8 @@ class Events(object):
             parts = (event.pack(),)
         self._send(parts)
 
-    def emit(self, name, args, xheader={}):
+    def emit(self, name, args, xheader=None):
+        xheader = {} if xheader is None else xheader
         event = self.create_event(name, args, xheader)
         identity = xheader.get('zmqid', None)
         return self.emit_event(event, identity)
@@ -282,7 +284,8 @@ class WrappedEvents(object):
     def recv_is_available(self):
         return self._channel.recv_is_available
 
-    def create_event(self, name, args, xheader={}):
+    def create_event(self, name, args, xheader=None):
+        xheader = {} if xheader is None else xheader
         event = Event(name, args, self._channel.context)
         event.header.update(xheader)
         return event
@@ -292,7 +295,7 @@ class WrappedEvents(object):
         wrapper_event = self._channel.create_event('w', event_payload)
         self._channel.emit_event(wrapper_event)
 
-    def emit(self, name, args, xheader={}):
+    def emit(self, name, args, xheader=None):
         wrapper_event = self.create_event(name, args, xheader)
         self.emit_event(wrapper_event)
 
