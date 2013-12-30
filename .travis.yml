@@ -1,10 +1,22 @@
 language: python
 python:
   - 2.7
+env:
+  matrix:
+    - PYZMQ='pyzmq==14.0.1'
+    - PYZMQ='pyzmq==14.0.0'
+    - PYZMQ='pyzmq==13.1.0'
+    - PYZMQ='pyzmq==13.0.2'
+    - PYZMQ='pyzmq==13.0.0'
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: PYZMQ='pyzmq==14.0.0'
+    - env: PYZMQ='pyzmq==14.0.1'
 script: nosetests
 before_install:
   - sudo apt-get update
   - sudo apt-get install python-dev libevent-dev
 install:
-  - pip install nose --use-mirrors
-  - pip install . --use-mirrors
+  - "pip install nose gevent msgpack-python $PYZMQ"
+  - pip install . --no-deps
