@@ -156,7 +156,7 @@ python API. Below are a few examples.
 
 Here's how to expose an object of your choice as a zeroservice::
 
-    class Cooler:
+    class Cooler(object):
         """ Various convenience methods to make things cooler. """
 
         def add_man(self, sentence):
