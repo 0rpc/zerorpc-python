@@ -57,23 +57,23 @@ class ServerBase(object):
         self._acceptor_task = None
 
         self._methods = methods
+        self._inject_builtins()
         for (k, functor) in self._methods.iteritems():
             if not isinstance(functor, DecoratorBase):
                 self._methods[k] = rep(functor)
-        self._inject_builtins()
 
         self._heartbeat_freq = heartbeat
 
     @staticmethod
     def _extract_name(methods):
-        return getattr(type(methods), '__name__', None) or repr(methods)
+        return getattr(type(methods), '__name__', repr(methods))
 
     @staticmethod
     def _build_method_dict(wrapped):
         return dict( (k, getattr(wrapped, k))
             for k in dir(wrapped)
             if callable(getattr(wrapped, k))
-            and not k.startswith('_') )
+            and not k.startswith('_') )  # Note that filtering out underscored methods protects built in ones.
 
     def close(self):
         self.stop()
