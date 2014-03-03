@@ -68,16 +68,15 @@ class ServerBase(object):
 
     @staticmethod
     def _filter_methods(cls, self, methods):
-        if hasattr(methods, '__getitem__'):
+        if isinstance(methods, dict):
             return methods
-        server_methods = set(getattr(self, k) for k in dir(cls) if not
-                             k.startswith('_'))
+        server_methods = set(k for k in dir(cls) if not k.startswith('_'))
         return dict((k, getattr(methods, k))
-                    for k in dir(methods)
-                    if (callable(getattr(methods, k))
-                        and not k.startswith('_')
-                        and getattr(methods, k) not in server_methods
-                        ))
+                for k in dir(methods)
+                if callable(getattr(methods, k))
+                and not k.startswith('_')
+                and k not in server_methods
+                )
 
     @staticmethod
     def _extract_name(methods):
