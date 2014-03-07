@@ -31,7 +31,7 @@ import gevent.local
 import gevent.lock
 
 
-import gevent_zmq as zmq
+import zmq.green as zmq
 from .context import Context
 
 
