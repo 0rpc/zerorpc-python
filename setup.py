@@ -33,7 +33,7 @@ except ImportError:
 
 
 requirements = [
-    'gevent',
+    'gevent>=1.0',
     'msgpack-python',
     'pyzmq==13.1.0'
 ]
