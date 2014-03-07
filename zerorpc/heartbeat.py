@@ -30,7 +30,7 @@ import gevent.event
 import gevent.local
 import gevent.lock
 
-from .exceptions import *
+from .exceptions import *  # noqa
 
 
 class HeartBeatOnChannel(object):

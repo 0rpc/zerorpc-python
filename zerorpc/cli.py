@@ -35,8 +35,8 @@ import zerorpc
 
 
 parser = argparse.ArgumentParser(
-        description='Make a zerorpc call to a remote service.'
-        )
+    description='Make a zerorpc call to a remote service.'
+)
 
 client_or_server = parser.add_mutually_exclusive_group()
 client_or_server.add_argument('--client', action='store_true', default=True,
@@ -139,10 +139,11 @@ def zerorpc_inspect_legacy(client, filter_method, long_doc, include_argspec):
             remote_detailled_methods()))
 
     r = [(name + (inspect.formatargspec(*argspec)
-            if argspec else '(...)'), doc)
-            for name, argspec, doc in remote_detailled_methods()]
+                  if argspec else '(...)'), doc)
+         for name, argspec, doc in remote_detailled_methods()]
     longest_name_len = max(len(name) for name, doc in r)
     return (longest_name_len, r)
+
 
 # handle the 'python formatted' _zerorpc_inspect, that return the output of
 # "getargspec" from the python lib "inspect".
@@ -157,9 +158,10 @@ def zerorpc_inspect_python_argspecs(remote_methods, filter_method, long_doc, inc
             doc = doc.splitlines()[0]
         return (name, doc)
     r = [format_method(*methods_info) for methods_info in remote_methods if
-            filter_method is None or methods_info[0] == filter_method]
+         filter_method is None or methods_info[0] == filter_method]
     longest_name_len = max(len(name) for name, doc in r)
     return (longest_name_len, r)
+
 
 def zerorpc_inspect_generic(remote_methods, filter_method, long_doc, include_argspec):
     def format_method(name, args, doc):
@@ -183,6 +185,7 @@ def zerorpc_inspect_generic(remote_methods, filter_method, long_doc, include_arg
     longest_name_len = max(len(name) for name, doc in methods)
     return (longest_name_len, methods)
 
+
 def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
     try:
         remote_methods = client._zerorpc_inspect()['methods']
@@ -200,6 +203,7 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
 
     return zerorpc_inspect_generic(remote_methods, method, long_doc,
             include_argspec)
+
 
 def run_client(args):
     client = zerorpc.Client(timeout=args.timeout, heartbeat=args.heartbeat,
@@ -269,4 +273,3 @@ def main():
         return -1
 
     return run_server(args)
-

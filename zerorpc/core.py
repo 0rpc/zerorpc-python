@@ -71,13 +71,13 @@ class ServerBase(object):
         if hasattr(methods, '__getitem__'):
             return methods
         server_methods = set(getattr(self, k) for k in dir(cls) if not
-                k.startswith('_'))
+                             k.startswith('_'))
         return dict((k, getattr(methods, k))
-                for k in dir(methods)
-                if callable(getattr(methods, k))
-                and not k.startswith('_')
-                and getattr(methods, k) not in server_methods
-                )
+                    for k in dir(methods)
+                    if (callable(getattr(methods, k))
+                        and not k.startswith('_')
+                        and getattr(methods, k) not in server_methods
+                        ))
 
     @staticmethod
     def _extract_name(methods):
@@ -111,7 +111,7 @@ class ServerBase(object):
         self._methods['_zerorpc_name'] = lambda: self._name
         self._methods['_zerorpc_ping'] = lambda: ['pong', self._name]
         self._methods['_zerorpc_help'] = lambda m: \
-                self._methods[m]._zerorpc_doc()
+            self._methods[m]._zerorpc_doc()
         self._methods['_zerorpc_args'] = \
             lambda m: self._methods[m]._zerorpc_args()
         self._methods['_zerorpc_inspect'] = self._zerorpc_inspect
@@ -406,6 +406,7 @@ def fork_task_context(functor, context=None):
     '''
     context = context or Context.get_instance()
     header = context.hook_get_task_context()
+
     def wrapped(*args, **kargs):
         context.hook_load_task_context(header)
         return functor(*args, **kargs)
