@@ -89,7 +89,78 @@ def test_client_server():
     print client.add(1, 4)
     assert client.add(1, 4) == 5
 
+def test_wrapped_client_server():
+    endpoint = random_ipc_endpoint()
+    
+    class MySrv(object):
+        def lolita(self):
+            return 42
 
+        def add(self, a, b):
+            return a + b
+        
+        def run(self):
+            return "for the hills"
+        
+
+    srv = zerorpc.Server(MySrv())
+    srv.bind(endpoint)
+    gevent.spawn(srv.run)
+
+    client = zerorpc.Client()
+    client.connect(endpoint)
+
+    print client.lolita()
+    assert client.lolita() == 42
+
+    print client.add(1, 4)
+    assert client.add(1, 4) == 5
+
+    print client.run() == "for the hills"
+    assert client.run() == "for the hills"
+
+def test_exposing_list_dict():
+    endpoint = random_ipc_endpoint()
+    l = [0,2,2,3]
+    d = {"one": 1, "two": 2}
+
+    try:  
+        server = zerorpc.Server(l)
+        server.bind(endpoint)
+        thread = gevent.spawn(server.run)
+    except Exception, e:
+        raise AssertionError(e), None, sys.exc_info()[2]
+
+    client = zerorpc.Client()
+    client.connect(endpoint)
+    
+    assert client.count(2) == 2
+    
+    server.stop()
+    server.close()
+    thread.kill()
+    client.close()
+    
+    try:
+        server = zerorpc.Server(d)
+        server.bind(endpoint)
+        gevent.spawn(server.run)
+    except Exception, e:
+        raise AssertionError(e), None, sys.exc_info()[2]
+
+    client = zerorpc.Client()
+    client.connect(endpoint)
+
+    print str(client.keys())
+    assert "one" in client.keys()
+    assert "two" in client.keys()
+    assert "infinity" not in client.keys()
+    
+    server.stop()
+    server.close()
+    thread.kill()    
+    client.close()
+    
 def test_client_server_client_timeout():
     endpoint = random_ipc_endpoint()
 
