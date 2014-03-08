@@ -13,10 +13,13 @@ matrix:
   allow_failures:
     - env: PYZMQ='pyzmq==14.0.0'
     - env: PYZMQ='pyzmq==14.0.1'
-script: nosetests
+script: 
+  - flake8 --ignore=E501,E128 zerorpc bin
+  - nosetests
 before_install:
   - sudo apt-get update
   - sudo apt-get install python-dev libevent-dev
 install:
+  - pip install flake8
   - "pip install nose gevent msgpack-python $PYZMQ"
   - pip install . --no-deps

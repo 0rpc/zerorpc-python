@@ -22,6 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Tell flake8 to ignore this file (otherwise it will complain about import *)
+# flake8: noqa
 from .version import *
 from .exceptions import *
 from .context import *

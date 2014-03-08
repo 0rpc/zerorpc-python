@@ -100,8 +100,8 @@ class Context(zmq.Context):
 
     def _reset_msgid(self):
         self._msg_id_base = str(uuid.uuid4())[8:]
-        self._msg_id_counter = random.randrange(0, 2**32)
-        self._msg_id_counter_stop = random.randrange(self._msg_id_counter, 2**32)
+        self._msg_id_counter = random.randrange(0, 2 ** 32)
+        self._msg_id_counter_stop = random.randrange(self._msg_id_counter, 2 ** 32)
 
     def new_msgid(self):
         if self._msg_id_counter >= self._msg_id_counter_stop:
@@ -125,9 +125,9 @@ class Context(zmq.Context):
                 registered_count += 1
         return registered_count
 
-
+    #
     # client/server
-
+    #
     def hook_resolve_endpoint(self, endpoint):
         for functor in self._hooks['resolve_endpoint']:
             endpoint = functor(endpoint)
@@ -143,9 +143,9 @@ class Context(zmq.Context):
             event_header.update(functor())
         return event_header
 
-
+    #
     # Server-side hooks
-
+    #
     def hook_server_before_exec(self, request_event):
         """Called when a method is about to be executed on the server."""
 
@@ -176,9 +176,9 @@ class Context(zmq.Context):
         for functor in self._hooks['server_inspect_exception']:
             functor(request_event, reply_event, task_context, exc_infos)
 
-
+    #
     # Client-side hooks
-
+    #
     def hook_client_handle_remote_error(self, event):
         exception = None
         for functor in self._hooks['client_handle_remote_error']:

@@ -25,18 +25,18 @@
 # Based on https://github.com/traviscline/gevent-zeromq/
 
 # We want to act like zmq
-from zmq import *
+from zmq import *  # noqa
 
 # A way to access original zmq
 import zmq as _zmq
 
 import gevent.event
 import gevent.core
-import sys
 import errno
 from logging import getLogger
 
 logger = getLogger(__name__)
+
 
 class Context(_zmq.Context):
 
@@ -59,13 +59,13 @@ class Socket(_zmq.Socket):
         try:
             # gevent>=1.0
             self.__dict__["_state_event"] = gevent.hub.get_hub().loop.io(
-                    on_state_changed_fd, gevent.core.READ)
+                on_state_changed_fd, gevent.core.READ)
             self._state_event.start(self._on_state_changed)
         except AttributeError:
             # gevent<1.0
             self.__dict__["_state_event"] = \
-                    gevent.core.read_event(on_state_changed_fd,
-                            self._on_state_changed, persist=True)
+                gevent.core.read_event(on_state_changed_fd,
+                                       self._on_state_changed, persist=True)
 
     def _on_state_changed(self, event=None, _evtype=None):
         if self.closed:
@@ -137,8 +137,8 @@ class Socket(_zmq.Socket):
             while not self._writable.wait(timeout=1):
                 try:
                     if self.getsockopt(_zmq.EVENTS) & _zmq.POLLOUT:
-                        logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
-                                "catching up after missing event (SEND) /!\\")
+                        logger.error("/!\\ gevent_zeromq BUG /!\\ "
+                                     "catching up after missing event (SEND) /!\\")
                         break
                 except ZMQError as e:
                     if e.errno not in (_zmq.EAGAIN, errno.EINTR):
@@ -177,8 +177,8 @@ class Socket(_zmq.Socket):
             while not self._readable.wait(timeout=1):
                 try:
                     if self.getsockopt(_zmq.EVENTS) & _zmq.POLLIN:
-                        logger.error("/!\\ gevent_zeromq BUG /!\\ " + \
-                                "catching up after missing event (RECV) /!\\")
+                        logger.error("/!\\ gevent_zeromq BUG /!\\ "
+                                     "catching up after missing event (RECV) /!\\")
                         break
                 except ZMQError as e:
                     if e.errno not in (_zmq.EAGAIN, errno.EINTR):

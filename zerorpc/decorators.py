@@ -24,7 +24,7 @@
 
 import inspect
 
-from .patterns import *
+from .patterns import *  # noqa
 
 
 class DecoratorBase(object):

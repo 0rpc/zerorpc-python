@@ -107,16 +107,16 @@ class Receiver(object):
 
 class Event(object):
 
-    __slots__ = [ '_name', '_args', '_header' ]
+    __slots__ = ['_name', '_args', '_header']
 
     def __init__(self, name, args, context, header=None):
         self._name = name
         self._args = args
         if header is None:
             self._header = {
-                    'message_id': context.new_msgid(),
-                    'v': 3
-                    }
+                'message_id': context.new_msgid(),
+                'v': 3
+            }
         else:
             self._header = header
 
