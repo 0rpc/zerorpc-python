@@ -50,15 +50,13 @@ class ServerBase(object):
             pool_size=None, heartbeat=5):
         self._multiplexer = ChannelMultiplexer(channel)
 
-        if methods is None:
-            methods = self
-
         self._context = context or Context.get_instance()
         self._name = name or self._extract_name()
         self._task_pool = gevent.pool.Pool(size=pool_size)
         self._acceptor_task = None
-        self._methods = self._filter_methods(ServerBase, self, methods)
-
+        self._methods = methods
+        # NOTE: The ordering and behavior of calls here makes the intended and
+        # actual functionality unclear.
         self._inject_builtins()
         self._heartbeat_freq = heartbeat
 
@@ -67,18 +65,12 @@ class ServerBase(object):
                 self._methods[k] = rep(functor)
 
     @staticmethod
-    def _filter_methods(cls, self, methods):
-        if hasattr(methods, '__getitem__'):
-            return methods
-        server_methods = set(getattr(self, k) for k in dir(cls) if not
-                k.startswith('_'))
-        return dict((k, getattr(methods, k))
-                for k in dir(methods)
-                if callable(getattr(methods, k))
-                and not k.startswith('_')
-                and getattr(methods, k) not in server_methods
-                )
-
+    def _build_method_dict(wrapped):
+        return dict( (k, getattr(wrapped, k))
+            for k in dir(wrapped)
+            if callable(getattr(wrapped, k))
+            and not k.startswith('_') )
+            
     @staticmethod
     def _extract_name(methods):
         return getattr(type(methods), '__name__', None) or repr(methods)
@@ -261,16 +253,21 @@ class ClientBase(object):
 
 
 class Server(SocketBase, ServerBase):
-
-    def __init__(self, methods=None, name=None, context=None, pool_size=None,
+    
+    def __init__(self, wrapped=None, name=None, context=None, pool_size=None,
             heartbeat=5):
         SocketBase.__init__(self, zmq.ROUTER, context)
-        if methods is None:
-            methods = self
+        # initialized self._events and self._context
+        if wrapped is not None:
+            methods = ServerBase._build_method_dict(wrapped)
+        else:
+            # someone must be trying to create a zeroservice by subclassing Server
+            methods = ServerBase._build_method_dict(self)
+            for k in [m for m in dir(ServerBase) if not m.startswith("_")]:
+                del methods[k]
 
         name = name or ServerBase._extract_name(methods)
-        methods = ServerBase._filter_methods(Server, self, methods)
-        ServerBase.__init__(self, self._events, methods, name, context,
+        ServerBase.__init__(self, self._events, methods, name, self._context,
                 pool_size, heartbeat)
 
     def close(self):
@@ -314,7 +311,7 @@ class Puller(SocketBase):
         if methods is None:
             methods = self
 
-        self._methods = ServerBase._filter_methods(Puller, self, methods)
+        self._methods = ServerBase._build_method_dict(methods)
         self._receiver_task = None
 
     def close(self):
