@@ -26,7 +26,7 @@
 import uuid
 import random
 
-import zmq.green as zmq
+import gevent_zmq as zmq
 
 
 class Context(zmq.Context):

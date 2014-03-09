@@ -64,12 +64,6 @@ def test_server_manual():
     client_channel.close()
     srv.stop()
 
-def test_server_can_wrap_list():
-    endpoint = random_ipc_endpoint()
-    
-    l = list()
-    srv = zerorpc.Server(list)
-    srv.bind(endpoint)
 
 def test_client_server():
     endpoint = random_ipc_endpoint()

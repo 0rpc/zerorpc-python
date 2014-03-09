@@ -24,7 +24,6 @@
 
 
 import sys
-import inspect
 import traceback
 import gevent.pool
 import gevent.queue
@@ -32,7 +31,7 @@ import gevent.event
 import gevent.local
 import gevent.lock
 
-import zmq.green as zmq
+import gevent_zmq as zmq
 from .exceptions import TimeoutExpired, RemoteError, LostRemote
 from .channel import ChannelMultiplexer, BufferedChannel
 from .socket import SocketBase
@@ -51,29 +50,38 @@ class ServerBase(object):
             pool_size=None, heartbeat=5):
         self._multiplexer = ChannelMultiplexer(channel)
 
+        if methods is None:
+            methods = self
+
         self._context = context or Context.get_instance()
         self._name = name or self._extract_name()
         self._task_pool = gevent.pool.Pool(size=pool_size)
         self._acceptor_task = None
+        self._methods = self._filter_methods(ServerBase, self, methods)
 
-        self._methods = methods
-        for (k, functor) in self._methods.iteritems():
+        self._inject_builtins()
+        self._heartbeat_freq = heartbeat
+
+        for (k, functor) in self._methods.items():
             if not isinstance(functor, DecoratorBase):
                 self._methods[k] = rep(functor)
-        self._inject_builtins()
 
-        self._heartbeat_freq = heartbeat
+    @staticmethod
+    def _filter_methods(cls, self, methods):
+        if hasattr(methods, '__getitem__'):
+            return methods
+        server_methods = set(getattr(self, k) for k in dir(cls) if not
+                k.startswith('_'))
+        return dict((k, getattr(methods, k))
+                for k in dir(methods)
+                if callable(getattr(methods, k))
+                and not k.startswith('_')
+                and getattr(methods, k) not in server_methods
+                )
 
     @staticmethod
     def _extract_name(methods):
         return getattr(type(methods), '__name__', None) or repr(methods)
-
-    @staticmethod
-    def _build_method_dict(wrapped):
-        return dict( (k, getattr(wrapped, k))
-            for k in dir(wrapped)
-            if callable(getattr(wrapped, k))
-            and not k.startswith('_') )
 
     def close(self):
         self.stop()
@@ -252,20 +260,17 @@ class ClientBase(object):
         return lambda *args, **kargs: self(method, *args, **kargs)
 
 
-class Server(SocketBase, ServerBase):    
-    def __init__(self, wrapped=None, name=None, context=None, pool_size=None,
+class Server(SocketBase, ServerBase):
+
+    def __init__(self, methods=None, name=None, context=None, pool_size=None,
             heartbeat=5):
         SocketBase.__init__(self, zmq.ROUTER, context)
-        # initialized self._context and self._events
-        if wrapped is not None:
-            methods = ServerBase._build_method_dict(wrapped)
-        else:
-            methods = ServerBase._build_method_dict(self)
-            for k in ['close', 'stop', 'run']:
-                del methods[k]
+        if methods is None:
+            methods = self
 
-        name = ServerBase._extract_name(wrapped)
-        ServerBase.__init__(self, self._events, methods, name, self._context,
+        name = name or ServerBase._extract_name(methods)
+        methods = ServerBase._filter_methods(Server, self, methods)
+        ServerBase.__init__(self, self._events, methods, name, context,
                 pool_size, heartbeat)
 
     def close(self):
@@ -309,7 +314,7 @@ class Puller(SocketBase):
         if methods is None:
             methods = self
 
-        self._methods = ServerBase._build_method_dict(methods)
+        self._methods = ServerBase._filter_methods(Puller, self, methods)
         self._receiver_task = None
 
     def close(self):
