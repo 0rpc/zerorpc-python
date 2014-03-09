@@ -121,20 +121,20 @@ def test_wrapped_client_server():
 
 def test_exposing_list_dict():
     endpoint = random_ipc_endpoint()
-    l = [0,1,2,3]
+    l = [0,2,2,3]
     d = {"one": 1, "two": 2}
 
     try:  
         server = zerorpc.Server(l)
         server.bind(endpoint)
-        thread = gevent.spawn(srv.run)
+        thread = gevent.spawn(server.run)
     except Exception, e:
         raise AssertionError(e), None, sys.exc_info()[2]
 
     client = zerorpc.Client()
     client.connect(endpoint)
     
-    assert client.count() == 4
+    assert client.count(2) == 2
     
     server.stop()
     server.close()
@@ -144,15 +144,18 @@ def test_exposing_list_dict():
     try:
         server = zerorpc.Server(d)
         server.bind(endpoint)
-        gevent.spawn(srv.run)
+        gevent.spawn(server.run)
     except Exception, e:
         raise AssertionError(e), None, sys.exc_info()[2]
 
     client = zerorpc.Client()
     client.connect(endpoint)
 
-    assert client.keys() == ["one", "two"]
-
+    print str(client.keys())
+    assert "one" in client.keys()
+    assert "two" in client.keys()
+    assert "infinity" not in client.keys()
+    
     server.stop()
     server.close()
     thread.kill()    
