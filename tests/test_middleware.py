@@ -374,9 +374,10 @@ def test_task_context_pubsub():
     # We need this retry logic to wait that the subscriber.run coroutine starts
     # reading (the published messages will go to /dev/null until then).
     for attempt in xrange(0, 10):
-        c.echo('pub...')
         if trigger.wait(0.2):
             break
+        else:
+            c.echo('pub')
 
     subscriber.stop()
     subscriber_task.join()
