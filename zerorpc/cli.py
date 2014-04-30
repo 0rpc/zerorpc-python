@@ -204,6 +204,14 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
     return zerorpc_inspect_generic(remote_methods, method, long_doc,
             include_argspec)
 
+def load_json_or_raw(s):
+    """
+    Load string to json object or just return it
+    """
+    try:
+        return json.loads(s)
+    except ValueError:
+        return s
 
 def run_client(args):
     client = zerorpc.Client(timeout=args.timeout, heartbeat=args.heartbeat,
@@ -226,7 +234,7 @@ def run_client(args):
         print '\n{0}\n\n{1}\n'.format(name, doc)
         return
     if args.json:
-        call_args = [json.loads(x) for x in args.params]
+        call_args = [load_json_or_raw(x) for x in args.params]
     else:
         call_args = args.params
     results = client(args.command, *call_args)
