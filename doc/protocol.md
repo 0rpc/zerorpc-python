@@ -103,12 +103,12 @@ This document talks only about the version 3 of the protocol.
 
  - Each new event opens a new channel implicitly.
  - The id of the new event will represent the channel id for the connection.
- - Each consecutive event on a channel will have the header field "reply_to"
+ - Each consecutive event on a channel will have the header field "response_to"
    set to the channel id:
 
 		{
 			"message_id": "6ce9503a-bfb8-486a-ac79-e2ed225ace79",
-			"reply_to": "6636fb60-2bca-4ecb-8cb4-bbaaf174e9e6"
+			"response_to": "6636fb60-2bca-4ecb-8cb4-bbaaf174e9e6"
 		}
 
 #### Heartbeat
