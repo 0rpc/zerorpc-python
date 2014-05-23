@@ -22,7 +22,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-execfile('zerorpc/version.py')
+# execfile() doesn't exist in Python 3, this way we are compatible with both.
+exec(compile(open('zerorpc/version.py').read(), 'zerorpc/version.py', 'exec'))
+
 import sys
 
 
