@@ -3,6 +3,8 @@ python:
   - 2.7
 env:
   matrix:
+    - PYZMQ='pyzmq==14.1.1'
+    - PYZMQ='pyzmq==14.1.0'
     - PYZMQ='pyzmq==14.0.1'
     - PYZMQ='pyzmq==14.0.0'
     - PYZMQ='pyzmq==13.1.0'
@@ -13,6 +15,8 @@ matrix:
   allow_failures:
     - env: PYZMQ='pyzmq==14.0.0'
     - env: PYZMQ='pyzmq==14.0.1'
+    - env: PYZMQ='pyzmq==14.1.0'
+    - env: PYZMQ='pyzmq==14.1.1'
 script: 
   - flake8 --ignore=E501,E128 zerorpc bin
   - nosetests
