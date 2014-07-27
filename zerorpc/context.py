@@ -46,7 +46,7 @@ class Context(zmq.Context):
             'client_before_request': [],
             'client_after_request': []
         }
-        prop_funcs = ['_middlewares','_msg_id_base', '_msg_id_counter', '_msg_id_counter_stop']
+        prop_funcs = ['_msg_id_base', '_msg_id_counter', '_msg_id_counter_stop']
         for func in prop_funcs:
             self.__dict__[func] = 0
         self._reset_msgid()
