@@ -152,7 +152,7 @@ class ServerBase(object):
         except Exception:
             exc_infos = list(sys.exc_info())
             human_exc_infos = self._print_traceback(protocol_v1, exc_infos)
-            reply_event = bufchan.create_event('ERR', human_exc_infos,
+            reply_event = bufchan.new_event('ERR', human_exc_infos,
                     self._context.hook_get_task_context())
             self._context.hook_server_inspect_exception(event, reply_event, exc_infos)
             bufchan.emit_event(reply_event)
@@ -236,7 +236,7 @@ class ClientBase(object):
         bufchan = BufferedChannel(hbchan, inqueue_size=kargs.get('slots', 100))
 
         xheader = self._context.hook_get_task_context()
-        request_event = bufchan.create_event(method, args, xheader)
+        request_event = bufchan.new_event(method, args, xheader)
         self._context.hook_client_before_request(request_event)
         bufchan.emit_event(request_event)
 
