@@ -32,7 +32,9 @@ import gevent.lock
 
 
 import gevent_zmq as zmq
+from .exceptions import TimeoutExpired
 from .context import Context
+from .channel_base import ChannelBase
 
 
 class Sender(object):
@@ -64,8 +66,11 @@ class Sender(object):
             if not running:
                 return
 
-    def __call__(self, parts):
-        self._send_queue.put(parts)
+    def __call__(self, parts, timeout=None):
+        try:
+            self._send_queue.put(parts, timeout=timeout)
+        except gevent.queue.Full:
+            raise TimeoutExpired(timeout)
 
 
 class Receiver(object):
@@ -101,24 +106,25 @@ class Receiver(object):
                 break
             self._recv_queue.put(parts)
 
-    def __call__(self):
-        return self._recv_queue.get()
+    def __call__(self, timeout=None):
+        try:
+            return self._recv_queue.get(timeout=timeout)
+        except gevent.queue.Empty:
+            raise TimeoutExpired(timeout)
 
 
 class Event(object):
 
-    __slots__ = ['_name', '_args', '_header']
+    __slots__ = ['_name', '_args', '_header', '_identity']
 
     def __init__(self, name, args, context, header=None):
         self._name = name
         self._args = args
         if header is None:
-            self._header = {
-                'message_id': context.new_msgid(),
-                'v': 3
-            }
+            self._header = {'message_id': context.new_msgid(), 'v': 3}
         else:
             self._header = header
+        self._identity = None
 
     @property
     def header(self):
@@ -135,6 +141,14 @@ class Event(object):
     @property
     def args(self):
         return self._args
+
+    @property
+    def identity(self):
+        return self._identity
+
+    @identity.setter
+    def identity(self, v):
+        self._identity = v
 
     def pack(self):
         return msgpack.Packer().pack((self._header, self._name, self._args))
@@ -164,27 +178,38 @@ class Event(object):
             args = self._args
             try:
                 args = '<<{0}>>'.format(str(self.unpack(self._args)))
-            except:
+            except Exception:
                 pass
-        return '{0} {1} {2}'.format(self._name, self._header,
-                args)
+        if self._identity:
+            identity = ', '.join(repr(x) for x in self._identity)
+            return '<{0}> {1} {2} {3}'.format(identity, self._name,
+                    self._header, args)
+        return '{0} {1} {2}'.format(self._name, self._header, args)
 
 
-class Events(object):
+class Events(ChannelBase):
     def __init__(self, zmq_socket_type, context=None):
         self._zmq_socket_type = zmq_socket_type
         self._context = context or Context.get_instance()
-        self._socket = zmq.Socket(self._context, zmq_socket_type)
-        self._send = self._socket.send_multipart
-        self._recv = self._socket.recv_multipart
-        if zmq_socket_type in (zmq.PUSH, zmq.PUB, zmq.DEALER, zmq.ROUTER):
+        self._socket = self._context.socket(zmq_socket_type)
+
+        if zmq_socket_type in (zmq.PUSH, zmq.PUB, zmq.DEALER, zmq.ROUTER, zmq.REQ):
             self._send = Sender(self._socket)
-        if zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER):
+        else:
+            self._send = None
+
+        if zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER, zmq.REP):
             self._recv = Receiver(self._socket)
+        else:
+            self._recv = None
 
     @property
-    def recv_is_available(self):
-        return self._zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER)
+    def recv_is_supported(self):
+        return self._recv is not None
+
+    @property
+    def emit_is_supported(self):
+        return self._send is not None
 
     def __del__(self):
         try:
@@ -226,42 +251,35 @@ class Events(object):
             r.append(self._socket.bind(endpoint_))
         return r
 
-    def create_event(self, name, args, xheader=None):
-        xheader = {} if xheader is None else xheader
+    def new_event(self, name, args, xheader=None):
         event = Event(name, args, context=self._context)
-        for k, v in xheader.items():
-            if k == 'zmqid':
-                continue
-            event.header[k] = v
+        if xheader:
+            event.header.update(xheader)
         return event
 
-    def emit_event(self, event, identity=None):
-        if identity is not None:
-            parts = list(identity)
+    def emit_event(self, event, timeout=None):
+        if event.identity:
+            parts = list(event.identity or list())
             parts.extend(['', event.pack()])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
             parts = ('', event.pack())
         else:
             parts = (event.pack(),)
-        self._send(parts)
+        self._send(parts, timeout)
 
-    def emit(self, name, args, xheader=None):
-        xheader = {} if xheader is None else xheader
-        event = self.create_event(name, args, xheader)
-        identity = xheader.get('zmqid', None)
-        return self.emit_event(event, identity)
-
-    def recv(self):
-        parts = self._recv()
-        if len(parts) == 1:
-            identity = None
-            blob = parts[0]
-        else:
+    def recv(self, timeout=None):
+        parts = self._recv(timeout=timeout)
+        if len(parts) > 2:
             identity = parts[0:-2]
             blob = parts[-1]
+        elif len(parts) == 2:
+            identity = parts[0:-1]
+            blob = parts[-1]
+        else:
+            identity = None
+            blob = parts[0]
         event = Event.unpack(blob)
-        if identity is not None:
-            event.header['zmqid'] = identity
+        event.identity = identity
         return event
 
     def setsockopt(self, *args):
