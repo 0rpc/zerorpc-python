@@ -3,20 +3,13 @@ python:
   - 2.7
 env:
   matrix:
-    - PYZMQ='pyzmq==14.1.1'
-    - PYZMQ='pyzmq==14.1.0'
-    - PYZMQ='pyzmq==14.0.1'
-    - PYZMQ='pyzmq==14.0.0'
-    - PYZMQ='pyzmq==13.1.0'
-    - PYZMQ='pyzmq==13.0.2'
-    - PYZMQ='pyzmq==13.0.0'
+    - PYZMQ='pyzmq>=14.3'
+    - PYZMQ='pyzmq>=14.2,<14.3'
+    - PYZMQ='pyzmq>=14.1,<14.2'
+    - PYZMQ='pyzmq>=14.0,<14.1'
+    - PYZMQ='pyzmq<14'
 matrix:
   fast_finish: true
-  allow_failures:
-    - env: PYZMQ='pyzmq==14.0.0'
-    - env: PYZMQ='pyzmq==14.0.1'
-    - env: PYZMQ='pyzmq==14.1.0'
-    - env: PYZMQ='pyzmq==14.1.1'
 script: 
   - flake8 --ignore=E501,E128 zerorpc bin
   - ZPC_TEST_TIME_FACTOR=0.1 nosetests
