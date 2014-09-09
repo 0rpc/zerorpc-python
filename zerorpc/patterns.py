@@ -34,7 +34,7 @@ class ReqRep:
         channel.emit_event(rep_event)
 
     def accept_answer(self, event):
-        return True
+        return event.name in ('OK', 'ERR')
 
     def process_answer(self, context, channel, req_event, rep_event,
             handle_remote_error):
