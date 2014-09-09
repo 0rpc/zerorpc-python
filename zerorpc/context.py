@@ -44,7 +44,8 @@ class Context(zmq.Context):
             'server_inspect_exception': [],
             'client_handle_remote_error': [],
             'client_before_request': [],
-            'client_after_request': []
+            'client_after_request': [],
+            'client_patterns_list': [],
         }
         self._reset_msgid()
 
@@ -217,3 +218,8 @@ class Context(zmq.Context):
         """
         for functor in self._hooks['client_after_request']:
             functor(request_event, reply_event, exception)
+
+    def hook_client_patterns_list(self, patterns):
+        for functor in self._hooks['client_patterns_list']:
+            patterns = functor(patterns)
+        return patterns

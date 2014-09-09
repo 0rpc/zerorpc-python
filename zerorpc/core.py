@@ -206,27 +206,31 @@ class ClientBase(object):
         return exception
 
     def _select_pattern(self, event):
-        for pattern in patterns.patterns_list:
+        for pattern in self._context.hook_client_patterns_list(
+                patterns.patterns_list):
             if pattern.accept_answer(event):
                 return pattern
-        msg = 'Unable to find a pattern for: {0}'.format(event)
-        raise RuntimeError(msg)
+        return None
 
     def _process_response(self, request_event, bufchan, timeout):
-        try:
-            reply_event = bufchan.recv(timeout)
-            pattern = self._select_pattern(reply_event)
-            return pattern.process_answer(self._context, bufchan, request_event,
-                    reply_event, self._handle_remote_error)
-        except TimeoutExpired:
+        def raise_error(ex):
             bufchan.close()
-            ex = TimeoutExpired(timeout,
-                    'calling remote method {0}'.format(request_event.name))
             self._context.hook_client_after_request(request_event, None, ex)
             raise ex
-        except:
-            bufchan.close()
-            raise
+
+        try:
+            reply_event = bufchan.recv(timeout=timeout)
+        except TimeoutExpired:
+            raise_error(TimeoutExpired(timeout,
+                    'calling remote method {0}'.format(request_event.name)))
+
+        pattern = self._select_pattern(reply_event)
+        if pattern is None:
+            raise_error(RuntimeError(
+                'Unable to find a pattern for: {0}'.format(request_event)))
+
+        return pattern.process_answer(self._context, bufchan, request_event,
+                reply_event, self._handle_remote_error)
 
     def __call__(self, method, *args, **kargs):
         timeout = kargs.get('timeout', self._timeout)
