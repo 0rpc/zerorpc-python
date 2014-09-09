@@ -44,11 +44,12 @@ def test_events_channel_client_side():
     event = server.recv()
     print event
     assert list(event.args) == [42]
-    assert event.header.get('zmqid', None) is not None
+    assert event.identity is not None
 
-    server.emit('someanswer', (21,),
-            xheader=dict(response_to=event.header['message_id'],
-                zmqid=event.header['zmqid']))
+    reply_event = server.new_event('someanswer', (21,),
+            xheader=dict(response_to=event.header['message_id']))
+    reply_event.identity = event.identity
+    server.emit_event(reply_event)
     event = client_channel.recv()
     assert list(event.args) == [21]
 
@@ -69,12 +70,13 @@ def test_events_channel_client_side_server_send_many():
     event = server.recv()
     print event
     assert list(event.args) == [10]
-    assert event.header.get('zmqid', None) is not None
+    assert event.identity is not None
 
     for x in xrange(10):
-        server.emit('someanswer', (x,),
-                xheader=dict(response_to=event.header['message_id'],
-                    zmqid=event.header['zmqid']))
+        reply_event = server.new_event('someanswer', (x,),
+                xheader=dict(response_to=event.header['message_id']))
+        reply_event.identity = event.identity
+        server.emit_event(reply_event)
     for x in xrange(10):
         event = client_channel.recv()
         assert list(event.args) == [x]

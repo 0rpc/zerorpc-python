@@ -29,26 +29,31 @@ import gevent.local
 import gevent.lock
 
 from .exceptions import TimeoutExpired
+from .channel_base import ChannelBase
 
 from logging import getLogger
 
 logger = getLogger(__name__)
 
 
-class ChannelMultiplexer(object):
+class ChannelMultiplexer(ChannelBase):
     def __init__(self, events, ignore_broadcast=False):
         self._events = events
         self._active_channels = {}
         self._channel_dispatcher_task = None
         self._broadcast_queue = None
-        if events.recv_is_available and not ignore_broadcast:
+        if events.recv_is_supported and not ignore_broadcast:
             self._broadcast_queue = gevent.queue.Queue(maxsize=1)
             self._channel_dispatcher_task = gevent.spawn(
                 self._channel_dispatcher)
 
     @property
-    def recv_is_available(self):
-        return self._events.recv_is_available
+    def recv_is_supported(self):
+        return self._events.recv_is_supported
+
+    @property
+    def emit_is_supported(self):
+        return self._events.emit_is_supported
 
     def __del__(self):
         self.close()
@@ -57,30 +62,25 @@ class ChannelMultiplexer(object):
         if self._channel_dispatcher_task:
             self._channel_dispatcher_task.kill()
 
-    def create_event(self, name, args, xheader=None):
-        return self._events.create_event(name, args, xheader)
+    def new_event(self, name, args, xheader=None):
+        return self._events.new_event(name, args, xheader)
 
-    def emit_event(self, event, identity=None):
-        return self._events.emit_event(event, identity)
+    def emit_event(self, event, timeout=None):
+        return self._events.emit_event(event, timeout)
 
-    def emit(self, name, args, xheader=None):
-        return self._events.emit(name, args, xheader)
-
-    def recv(self):
+    def recv(self, timeout=None):
         if self._broadcast_queue is not None:
-            event = self._broadcast_queue.get()
+            event = self._broadcast_queue.get(timeout=timeout)
         else:
-            event = self._events.recv()
+            event = self._events.recv(timeout=timeout)
         return event
 
     def _channel_dispatcher(self):
         while True:
             try:
                 event = self._events.recv()
-            except Exception as e:
-                logger.error(
-                    'zerorpc.ChannelMultiplexer, '
-                    'ignoring error on recv: {0}'.format(e))
+            except Exception:
+                logger.exception('zerorpc.ChannelMultiplexer ignoring error on recv')
                 continue
             channel_id = event.header.get('response_to', None)
 
@@ -93,10 +93,9 @@ class ChannelMultiplexer(object):
                 queue = self._broadcast_queue
 
             if queue is None:
-                logger.error(
-                    'zerorpc.ChannelMultiplexer, '
-                    'unable to route event: {0}'
-                    .format(event.__str__(ignore_args=True)))
+                logger.warning('zerorpc.ChannelMultiplexer,'
+                        ' unable to route event: {0}'.format(
+                            event.__str__(ignore_args=True)))
             else:
                 queue.put(event)
 
@@ -115,7 +114,7 @@ class ChannelMultiplexer(object):
         return self._events.context
 
 
-class Channel(object):
+class Channel(ChannelBase):
 
     def __init__(self, multiplexer, from_event=None):
         self._multiplexer = multiplexer
@@ -124,13 +123,17 @@ class Channel(object):
         self._queue = gevent.queue.Queue(maxsize=1)
         if from_event is not None:
             self._channel_id = from_event.header['message_id']
-            self._zmqid = from_event.header.get('zmqid', None)
+            self._zmqid = from_event.identity
             self._multiplexer._active_channels[self._channel_id] = self
             self._queue.put(from_event)
 
     @property
-    def recv_is_available(self):
-        return self._multiplexer.recv_is_available
+    def recv_is_supported(self):
+        return self._multiplexer.recv_is_supported
+
+    @property
+    def emit_is_supported(self):
+        return self._multiplexer.emit_is_supported
 
     def __del__(self):
         self.close()
@@ -140,21 +143,18 @@ class Channel(object):
             del self._multiplexer._active_channels[self._channel_id]
             self._channel_id = None
 
-    def create_event(self, name, args, xheader=None):
-        event = self._multiplexer.create_event(name, args, xheader)
+    def new_event(self, name, args, xheader=None):
+        event = self._multiplexer.new_event(name, args, xheader)
         if self._channel_id is None:
             self._channel_id = event.header['message_id']
             self._multiplexer._active_channels[self._channel_id] = self
         else:
             event.header['response_to'] = self._channel_id
+        event.identity = self._zmqid
         return event
 
-    def emit(self, name, args, xheader=None):
-        event = self.create_event(name, args, xheader)
-        self._multiplexer.emit_event(event, self._zmqid)
-
-    def emit_event(self, event):
-        self._multiplexer.emit_event(event, self._zmqid)
+    def emit_event(self, event, timeout=None):
+        self._multiplexer.emit_event(event, timeout)
 
     def recv(self, timeout=None):
         try:
@@ -168,7 +168,7 @@ class Channel(object):
         return self._multiplexer.context
 
 
-class BufferedChannel(object):
+class BufferedChannel(ChannelBase):
 
     def __init__(self, channel, inqueue_size=100):
         self._channel = channel
@@ -183,8 +183,12 @@ class BufferedChannel(object):
         self._recv_task = gevent.spawn(self._recver)
 
     @property
-    def recv_is_available(self):
-        return self._channel.recv_is_available
+    def recv_is_supported(self):
+        return self._channel.recv_is_supported
+
+    @property
+    def emit_is_supported(self):
+        return self._channel.emit_is_supported
 
     @property
     def on_close_if(self):
@@ -211,10 +215,8 @@ class BufferedChannel(object):
             if event.name == '_zpc_more':
                 try:
                     self._remote_queue_open_slots += int(event.args[0])
-                except Exception as e:
-                    logger.error(
-                        'gevent_zerorpc.BufferedChannel._recver, '
-                        'exception: ' + repr(e))
+                except Exception:
+                    logger.exception('gevent_zerorpc.BufferedChannel._recver')
                 if self._remote_queue_open_slots > 0:
                     self._remote_can_recv.set()
             elif self._input_queue.qsize() == self._input_queue_size:
@@ -227,13 +229,11 @@ class BufferedChannel(object):
                     self.close()
                     return
 
-    def create_event(self, name, args, xheader=None):
-        return self._channel.create_event(name, args, xheader)
+    def new_event(self, name, args, xheader=None):
+        return self._channel.new_event(name, args, xheader)
 
-    def emit_event(self, event, block=True, timeout=None):
+    def emit_event(self, event, timeout=None):
         if self._remote_queue_open_slots == 0:
-            if not block:
-                return False
             self._remote_can_recv.clear()
             self._remote_can_recv.wait(timeout=timeout)
         self._remote_queue_open_slots -= 1
@@ -242,11 +242,6 @@ class BufferedChannel(object):
         except:
             self._remote_queue_open_slots += 1
             raise
-        return True
-
-    def emit(self, name, args, xheader=None, block=True, timeout=None):
-        event = self.create_event(name, args, xheader)
-        return self.emit_event(event, block, timeout)
 
     def _request_data(self):
         open_slots = self._input_queue_size - self._input_queue_reserved
