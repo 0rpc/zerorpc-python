@@ -31,9 +31,10 @@ import gevent.local
 import gevent.lock
 
 from .exceptions import *  # noqa
+from .channel_base import ChannelBase
 
 
-class HeartBeatOnChannel(object):
+class HeartBeatOnChannel(ChannelBase):
 
     def __init__(self, channel, freq=5, passive=False):
         self._channel = channel
@@ -49,8 +50,12 @@ class HeartBeatOnChannel(object):
             self._start_heartbeat()
 
     @property
-    def recv_is_available(self):
-        return self._channel.recv_is_available
+    def recv_is_supported(self):
+        return self._channel.recv_is_supported
+
+    @property
+    def emit_is_supported(self):
+        return self._channel.emit_is_supported
 
     def __del__(self):
         self.close()
@@ -100,30 +105,23 @@ class HeartBeatOnChannel(object):
         return LostRemote('Lost remote after {0}s heartbeat'.format(
             self._heartbeat_freq * 2))
 
-    def create_event(self, name, args, xheader=None):
+    def new_event(self, name, args, header=None):
         if self._compat_v2 and name == '_zpc_more':
             name = '_zpc_hb'
-        return self._channel.create_event(name, args, xheader)
+        return self._channel.new_event(name, args, header)
 
-    def emit_event(self, event):
+    def emit_event(self, event, timeout=None):
         if self._lost_remote:
             raise self._lost_remote_exception()
-        self._channel.emit_event(event)
-
-    def emit(self, name, args, xheader=None):
-        event = self.create_event(name, args, xheader)
-        self.emit_event(event)
+        self._channel.emit_event(event, timeout)
 
     def recv(self, timeout=None):
         if self._lost_remote:
             raise self._lost_remote_exception()
-
         try:
-            event = self._input_queue.get(timeout=timeout)
+            return self._input_queue.get(timeout=timeout)
         except gevent.queue.Empty:
             raise TimeoutExpired(timeout)
-
-        return event
 
     @property
     def channel(self):
