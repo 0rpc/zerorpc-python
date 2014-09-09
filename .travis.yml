@@ -19,7 +19,7 @@ matrix:
     - env: PYZMQ='pyzmq==14.1.1'
 script: 
   - flake8 --ignore=E501,E128 zerorpc bin
-  - nosetests
+  - ZPC_TEST_TIME_FACTOR=0.1 nosetests
 before_install:
   - sudo apt-get update
   - sudo apt-get install python-dev libevent-dev
