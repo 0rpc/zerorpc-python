@@ -405,9 +405,9 @@ def fork_task_context(functor, context=None):
             - if the new task will make any zerorpc call, it should be wrapped.
     '''
     context = context or Context.get_instance()
-    header = context.hook_get_task_context()
+    xheader = context.hook_get_task_context()
 
     def wrapped(*args, **kargs):
-        context.hook_load_task_context(header)
+        context.hook_load_task_context(xheader)
         return functor(*args, **kargs)
     return wrapped
