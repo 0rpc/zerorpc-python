@@ -38,14 +38,15 @@ class ReqRep:
 
     def process_answer(self, context, channel, req_event, rep_event,
             handle_remote_error):
-        if rep_event.name == 'ERR':
-            exception = handle_remote_error(rep_event)
-            context.hook_client_after_request(req_event, rep_event, exception)
-            raise exception
-        context.hook_client_after_request(req_event, rep_event)
-        channel.close()
-        result = rep_event.args[0]
-        return result
+        try:
+            if rep_event.name == 'ERR':
+                exception = handle_remote_error(rep_event)
+                context.hook_client_after_request(req_event, rep_event, exception)
+                raise exception
+            context.hook_client_after_request(req_event, rep_event)
+            return rep_event.args[0]
+        finally:
+            channel.close()
 
 
 class ReqStream:
@@ -74,17 +75,19 @@ class ReqStream:
         channel.on_close_if = is_stream_done
 
         def iterator(req_event, rep_event):
-            while rep_event.name == 'STREAM':
-                # Like in process_call, we made the choice to call the
-                # after_exec hook only when the stream is done.
-                yield rep_event.args
-                rep_event = channel.recv()
-            if rep_event.name == 'ERR':
-                exception = handle_remote_error(rep_event)
-                context.hook_client_after_request(req_event, rep_event, exception)
-                raise exception
-            context.hook_client_after_request(req_event, rep_event)
-            channel.close()
+            try:
+                while rep_event.name == 'STREAM':
+                    # Like in process_call, we made the choice to call the
+                    # after_exec hook only when the stream is done.
+                    yield rep_event.args
+                    rep_event = channel.recv()
+                if rep_event.name == 'ERR':
+                    exception = handle_remote_error(rep_event)
+                    context.hook_client_after_request(req_event, rep_event, exception)
+                    raise exception
+                context.hook_client_after_request(req_event, rep_event)
+            finally:
+                channel.close()
 
         return iterator(req_event, rep_event)
 

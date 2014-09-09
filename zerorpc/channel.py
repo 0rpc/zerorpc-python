@@ -55,9 +55,6 @@ class ChannelMultiplexer(ChannelBase):
     def emit_is_supported(self):
         return self._events.emit_is_supported
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         if self._channel_dispatcher_task:
             self._channel_dispatcher_task.kill()
@@ -135,9 +132,6 @@ class Channel(ChannelBase):
     def emit_is_supported(self):
         return self._multiplexer.emit_is_supported
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         if self._channel_id is not None:
             del self._multiplexer._active_channels[self._channel_id]
@@ -197,9 +191,6 @@ class BufferedChannel(ChannelBase):
     @on_close_if.setter
     def on_close_if(self, cb):
         self._on_close_if = cb
-
-    def __del__(self):
-        self.close()
 
     def close(self):
         if self._recv_task is not None:

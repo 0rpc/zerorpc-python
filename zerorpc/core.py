@@ -240,21 +240,13 @@ class ClientBase(object):
         self._context.hook_client_before_request(request_event)
         bufchan.emit_event(request_event)
 
-        try:
-            if kargs.get('async', False) is False:
-                return self._process_response(request_event, bufchan, timeout)
+        if kargs.get('async', False) is False:
+            return self._process_response(request_event, bufchan, timeout)
 
-            async_result = gevent.event.AsyncResult()
-            gevent.spawn(self._process_response, request_event, bufchan,
-                    timeout).link(async_result)
-            return async_result
-        except:
-            # XXX: This is going to be closed twice if async is false and
-            # _process_response raises an exception. I wonder if the above
-            # async branch can raise an exception too, if no we can just remove
-            # this code.
-            bufchan.close()
-            raise
+        async_result = gevent.event.AsyncResult()
+        gevent.spawn(self._process_response, request_event, bufchan,
+                timeout).link(async_result)
+        return async_result
 
     def __getattr__(self, method):
         return lambda *args, **kargs: self(method, *args, **kargs)

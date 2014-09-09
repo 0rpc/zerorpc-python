@@ -57,9 +57,6 @@ class HeartBeatOnChannel(ChannelBase):
     def emit_is_supported(self):
         return self._channel.emit_is_supported
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         if self._heartbeat_task is not None:
             self._heartbeat_task.kill()
