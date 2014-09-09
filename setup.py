@@ -37,7 +37,7 @@ except ImportError:
 requirements = [
     'gevent>=1.0',
     'msgpack-python',
-    'pyzmq==13.1.0'
+    'pyzmq>=13.1.0'
 ]
 if sys.version_info < (2, 7):
     requirements.append('argparse')
