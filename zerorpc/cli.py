@@ -29,6 +29,7 @@ import json
 import sys
 import inspect
 import os
+import logging
 from pprint import pprint
 
 import zerorpc
@@ -253,6 +254,7 @@ def run_client(args):
 
 
 def main():
+    logging.basicConfig()
     args = parser.parse_args()
 
     if args.bind or args.connect:
