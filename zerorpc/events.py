@@ -37,34 +37,79 @@ from .context import Context
 from .channel_base import ChannelBase
 
 
-class Sender(object):
+class SequentialSender(object):
+
+    def __init__(self, socket):
+        self._socket = socket
+
+    def _send(self, parts):
+        e = None
+        for i in xrange(len(parts) - 1):
+            try:
+                self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
+            except (gevent.GreenletExit, gevent.Timeout) as e:
+                if i == 0:
+                    raise
+                self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
+        try:
+            self._socket.send(parts[-1], copy=False)
+        except (gevent.GreenletExit, gevent.Timeout) as e:
+            self._socket.send(parts[-1], copy=False)
+        if e:
+            raise e
+
+    def __call__(self, parts, timeout=None):
+        if timeout:
+            with gevent.Timeout(timeout):
+                self._send(parts)
+        else:
+            self._send(parts)
+
+
+class SequentialReceiver(object):
+
+    def __init__(self, socket):
+        self._socket = socket
+
+    def _recv(self):
+        e = None
+        parts = []
+        while True:
+            try:
+                part = self._socket.recv(copy=False)
+            except (gevent.GreenletExit, gevent.Timeout) as e:
+                if len(parts) == 0:
+                    raise
+                part = self._socket.recv(copy=False)
+            parts.append(part)
+            if not part.more:
+                break
+        if e:
+            raise e
+        return parts
+
+    def __call__(self, timeout=None):
+        if timeout:
+            with gevent.Timeout(timeout):
+                return self._recv()
+        else:
+            return self._recv()
+
+
+class Sender(SequentialSender):
 
     def __init__(self, socket):
         self._socket = socket
         self._send_queue = gevent.queue.Channel()
         self._send_task = gevent.spawn(self._sender)
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         if self._send_task:
             self._send_task.kill()
 
     def _sender(self):
-        running = True
         for parts in self._send_queue:
-            for i in xrange(len(parts) - 1):
-                try:
-                    self._socket.send(parts[i], flags=zmq.SNDMORE)
-                except gevent.GreenletExit:
-                    if i == 0:
-                        return
-                    running = False
-                    self._socket.send(parts[i], flags=zmq.SNDMORE)
-            self._socket.send(parts[-1])
-            if not running:
-                return
+            super(Sender, self)._send(parts)
 
     def __call__(self, parts, timeout=None):
         try:
@@ -73,37 +118,21 @@ class Sender(object):
             raise TimeoutExpired(timeout)
 
 
-class Receiver(object):
+class Receiver(SequentialReceiver):
 
     def __init__(self, socket):
         self._socket = socket
         self._recv_queue = gevent.queue.Channel()
         self._recv_task = gevent.spawn(self._recver)
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         if self._recv_task:
             self._recv_task.kill()
+        self._recv_queue = None
 
     def _recver(self):
-        running = True
         while True:
-            parts = []
-            while True:
-                try:
-                    part = self._socket.recv()
-                except gevent.GreenletExit:
-                    running = False
-                    if len(parts) == 0:
-                        return
-                    part = self._socket.recv()
-                parts.append(part)
-                if not self._socket.getsockopt(zmq.RCVMORE):
-                    break
-            if not running:
-                break
+            parts = super(Receiver, self)._recv()
             self._recv_queue.put(parts)
 
     def __call__(self, timeout=None):
@@ -193,13 +222,17 @@ class Events(ChannelBase):
         self._context = context or Context.get_instance()
         self._socket = self._context.socket(zmq_socket_type)
 
-        if zmq_socket_type in (zmq.PUSH, zmq.PUB, zmq.DEALER, zmq.ROUTER, zmq.REQ):
+        if zmq_socket_type in (zmq.PUSH, zmq.PUB, zmq.DEALER, zmq.ROUTER):
             self._send = Sender(self._socket)
+        elif zmq_socket_type in (zmq.REQ, zmq.REP):
+            self._send = SequentialSender(self._socket)
         else:
             self._send = None
 
-        if zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER, zmq.REP):
+        if zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER):
             self._recv = Receiver(self._socket)
+        elif zmq_socket_type in (zmq.REQ, zmq.REP):
+            self._recv = SequentialReceiver(self._socket)
         else:
             self._recv = None
 
