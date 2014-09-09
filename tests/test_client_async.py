@@ -29,7 +29,7 @@ import sys
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint
+from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_client_server_client_timeout_with_async():
@@ -41,14 +41,14 @@ def test_client_server_client_timeout_with_async():
             return 42
 
         def add(self, a, b):
-            gevent.sleep(10)
+            gevent.sleep(TIME_FACTOR * 10)
             return a + b
 
     srv = MySrv()
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client = zerorpc.Client(timeout=2)
+    client = zerorpc.Client(timeout=TIME_FACTOR * 2)
     client.connect(endpoint)
 
     async_result = client.add(1, 4, async=True)
