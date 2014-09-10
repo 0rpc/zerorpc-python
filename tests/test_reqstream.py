@@ -42,11 +42,11 @@ def test_rcp_streaming():
         def xrange(self, max):
             return xrange(max)
 
-    srv = MySrv(heartbeat=TIME_FACTOR * 2)
+    srv = MySrv(heartbeat=TIME_FACTOR * 4)
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client = zerorpc.Client(heartbeat=TIME_FACTOR * 2)
+    client = zerorpc.Client(heartbeat=TIME_FACTOR * 4)
     client.connect(endpoint)
 
     r = client.range(10)

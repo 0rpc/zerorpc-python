@@ -60,12 +60,12 @@ def test_client_server_activate_heartbeat():
             gevent.sleep(TIME_FACTOR * 3)
             return 42
 
-    srv = MySrv(heartbeat=TIME_FACTOR * 1)
+    srv = MySrv(heartbeat=TIME_FACTOR * 4)
     srv.bind(endpoint)
     gevent.spawn(srv.run)
-    gevent.sleep(TIME_FACTOR * 0)
+    gevent.sleep(0)
 
-    client = zerorpc.Client(heartbeat=TIME_FACTOR * 1)
+    client = zerorpc.Client(heartbeat=TIME_FACTOR * 4)
     client.connect(endpoint)
 
     assert client.lolita() == 42
@@ -84,11 +84,12 @@ def test_client_server_passive_hearbeat():
             gevent.sleep(TIME_FACTOR * 3)
             return 2
 
-    srv = MySrv(heartbeat=TIME_FACTOR * 1)
+    srv = MySrv(heartbeat=TIME_FACTOR * 4)
     srv.bind(endpoint)
     gevent.spawn(srv.run)
+    gevent.sleep(0)
 
-    client = zerorpc.Client(heartbeat=TIME_FACTOR * 1, passive_heartbeat=True)
+    client = zerorpc.Client(heartbeat=TIME_FACTOR * 4, passive_heartbeat=True)
     client.connect(endpoint)
 
     assert client.slow() == 2

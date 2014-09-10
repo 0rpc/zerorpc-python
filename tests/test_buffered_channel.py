@@ -149,22 +149,28 @@ def test_heartbeat_can_open_channel_client_close():
     client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
     client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
-    event = server.recv()
-    server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
-    server_bufchan = zerorpc.BufferedChannel(server_hbchan)
+    def server_fn():
+        event = server.recv()
+        server_channel = server.channel(event)
+        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
+        server_bufchan = zerorpc.BufferedChannel(server_hbchan)
+        try:
+            while True:
+                gevent.sleep(1)
+        finally:
+            server_bufchan.close()
+    server_coro = gevent.spawn(server_fn)
 
     gevent.sleep(TIME_FACTOR * 3)
     print 'CLOSE CLIENT SOCKET!!!'
     client_bufchan.close()
     client.close()
     if sys.version_info < (2, 7):
-        assert_raises(zerorpc.LostRemote, client_bufchan.recv)
+        assert_raises(zerorpc.LostRemote, server_coro.get())
     else:
         with assert_raises(zerorpc.LostRemote):
-            client_bufchan.recv()
+            server_coro.get()
     print 'SERVER LOST CLIENT :)'
-    server_bufchan.close()
     server.close()
 
 
@@ -178,16 +184,11 @@ def test_do_some_req_rep():
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
-    client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
-    client_bufchan = zerorpc.BufferedChannel(client_hbchan)
-
-    event = server.recv()
-    server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
-    server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
     def client_do():
+        client_channel = client.channel()
+        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
+        client_bufchan = zerorpc.BufferedChannel(client_hbchan)
         for x in xrange(20):
             client_bufchan.emit('add', (x, x * x))
             event = client_bufchan.recv()
@@ -199,6 +200,11 @@ def test_do_some_req_rep():
     coro_pool.spawn(client_do)
 
     def server_do():
+        event = server.recv()
+        server_channel = server.channel(event)
+        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
+        server_bufchan = zerorpc.BufferedChannel(server_hbchan)
+
         for x in xrange(20):
             event = server_bufchan.recv()
             assert event.name == 'add'
@@ -389,18 +395,22 @@ def test_congestion_control_server_pushing():
 
     client_channel = client.channel()
     client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
-    client_bufchan = zerorpc.BufferedChannel(client_hbchan)
+    client_bufchan = zerorpc.BufferedChannel(client_hbchan, inqueue_size=100)
 
     event = server.recv()
     server_channel = server.channel(event)
     server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
-    server_bufchan = zerorpc.BufferedChannel(server_hbchan)
+    server_bufchan = zerorpc.BufferedChannel(server_hbchan, inqueue_size=100)
+
+    read_cnt = 0
 
     def client_do():
         for x in xrange(200):
             event = client_bufchan.recv()
             assert event.name == 'coucou'
             assert event.args == x
+            read_cnt += 1
+        raise Exception('CLIENT DONE')
 
     coro_pool = gevent.pool.Pool()
     coro_pool.spawn(client_do)
@@ -409,30 +419,37 @@ def test_congestion_control_server_pushing():
         if sys.version_info < (2, 7):
             def _do_with_assert_raises():
                 for x in xrange(200):
-                    server_bufchan.emit('coucou', x, timeout=TIME_FACTOR * 0)  # will fail when x == 1
+                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 1
             assert_raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
         else:
             with assert_raises(zerorpc.TimeoutExpired):
                 for x in xrange(200):
-                    server_bufchan.emit('coucou', x, timeout=TIME_FACTOR * 0)  # will fail when x == 1
+                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 1
         server_bufchan.emit('coucou', 1)  # block until receiver is ready
         if sys.version_info < (2, 7):
             def _do_with_assert_raises():
                 for x in xrange(2, 200):
-                    server_bufchan.emit('coucou', x, timeout=TIME_FACTOR * 0)  # will fail when x == 100
+                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 100
             assert_raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
         else:
             with assert_raises(zerorpc.TimeoutExpired):
                 for x in xrange(2, 200):
-                    server_bufchan.emit('coucou', x, timeout=TIME_FACTOR * 0)  # will fail when x == 100
-        for x in xrange(101, 200):
+                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 100
+        for x in xrange(read_cnt, 200):
             server_bufchan.emit('coucou', x) # block until receiver is ready
+        raise Exception('SERVER DONE')
 
 
     coro_pool.spawn(server_do)
-
-    coro_pool.join()
-    client_bufchan.close()
-    client.close()
-    server_bufchan.close()
-    server.close()
+    try:
+        coro_pool.join()
+    except zerorpc.LostRemote:
+        pass
+    finally:
+        try:
+            client_bufchan.close()
+            client.close()
+            server_bufchan.close()
+            server.close()
+        except Exception:
+            pass

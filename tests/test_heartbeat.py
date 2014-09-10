@@ -171,11 +171,11 @@ def test_do_some_req_rep():
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
     client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 4)
 
     event = server.recv()
     server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 4)
 
     def client_do():
         for x in xrange(20):

@@ -373,20 +373,18 @@ def test_task_context_pubsub():
     trigger.clear()
     # We need this retry logic to wait that the subscriber.run coroutine starts
     # reading (the published messages will go to /dev/null until then).
-    for attempt in xrange(0, 100):
+    while not trigger.is_set():
         c.echo('pub...')
-        if trigger.wait(TIME_FACTOR * 0.2):
+        if trigger.wait(TIME_FACTOR * 1):
             break
 
     subscriber.stop()
     subscriber_task.join()
 
-    assert publisher_tracer._log == [
-            ('new', publisher_tracer.trace_id),
-            ]
-    assert subscriber_tracer._log == [
-            ('load', publisher_tracer.trace_id),
-            ]
+    print publisher_tracer._log
+    assert ('new', publisher_tracer.trace_id) in publisher_tracer._log
+    print subscriber_tracer._log
+    assert ('load', publisher_tracer.trace_id) in subscriber_tracer._log
 
 
 class InspectExceptionMiddleware(Tracer):
