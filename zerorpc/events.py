@@ -29,7 +29,7 @@ import gevent.queue
 import gevent.event
 import gevent.local
 import gevent.lock
-
+import logging
 
 import gevent_zmq as zmq
 from .exceptions import TimeoutExpired
@@ -218,6 +218,7 @@ class Event(object):
 
 class Events(ChannelBase):
     def __init__(self, zmq_socket_type, context=None):
+        self._debug = False
         self._zmq_socket_type = zmq_socket_type
         self._context = context or Context.get_instance()
         self._socket = self._context.socket(zmq_socket_type)
@@ -262,6 +263,19 @@ class Events(ChannelBase):
             pass
         self._socket.close()
 
+    @property
+    def debug(self):
+        return self._debug
+
+    @debug.setter
+    def debug(self, v):
+        if v != self._debug:
+            self._debug = v
+            if self._debug:
+                logging.debug('debug enabled')
+            else:
+                logging.debug('debug disabled')
+
     def _resolve_endpoint(self, endpoint, resolve=True):
         if resolve:
             endpoint = self._context.hook_resolve_endpoint(endpoint)
@@ -276,12 +290,14 @@ class Events(ChannelBase):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.connect(endpoint_))
+            logging.debug('connected to %s (status=%s)', endpoint_, r[-1])
         return r
 
     def bind(self, endpoint, resolve=True):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.bind(endpoint_))
+            logging.debug('bound to %s (status=%s)', endpoint_, r[-1])
         return r
 
     def new_event(self, name, args, xheader=None):
@@ -291,6 +307,8 @@ class Events(ChannelBase):
         return event
 
     def emit_event(self, event, timeout=None):
+        if self._debug:
+            logging.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
             parts.extend(['', event.pack()])
@@ -313,6 +331,8 @@ class Events(ChannelBase):
             blob = parts[0]
         event = Event.unpack(blob)
         event.identity = identity
+        if self._debug:
+            logging.debug('<-- %s', event)
         return event
 
     def setsockopt(self, *args):

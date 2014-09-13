@@ -69,6 +69,9 @@ parser.add_argument('-?', '--inspect', default=False, action='store_true',
 parser.add_argument('--active-hb', default=False, action='store_true',
                     help='enable active heartbeat. The default is to \
                     wait for the server to send the first heartbeat')
+parser.add_argument('-d', '--debug', default=False, action='store_true',
+                    help='Print zerorpc debug msgs, \
+                    like outgoing and incomming messages.')
 parser.add_argument('address', nargs='?', help='address to connect to. Skip \
                     this if you specified --connect or --bind at least once')
 parser.add_argument('command', nargs='?',
@@ -110,6 +113,8 @@ def run_server(args):
         server_obj = server_obj()
 
     server = zerorpc.Server(server_obj, heartbeat=args.heartbeat)
+    if args.debug:
+        server.debug = True
     setup_links(args, server)
     print 'serving "{0}"'.format(server_obj_path)
     return server.run()
@@ -209,6 +214,8 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
 def run_client(args):
     client = zerorpc.Client(timeout=args.timeout, heartbeat=args.heartbeat,
             passive_heartbeat=not args.active_hb)
+    if args.debug:
+        client.debug = True
     setup_links(args, client)
     if not args.command:
         (longest_name_len, detailled_methods) = zerorpc_inspect(client,
@@ -256,6 +263,9 @@ def run_client(args):
 def main():
     logging.basicConfig()
     args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     if args.bind or args.connect:
         if args.command:
