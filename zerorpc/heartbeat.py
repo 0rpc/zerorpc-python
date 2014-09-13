@@ -37,6 +37,7 @@ from .channel_base import ChannelBase
 class HeartBeatOnChannel(ChannelBase):
 
     def __init__(self, channel, freq=5, passive=False):
+        self._closed = False
         self._channel = channel
         self._heartbeat_freq = freq
         self._input_queue = gevent.queue.Channel()
@@ -58,6 +59,7 @@ class HeartBeatOnChannel(ChannelBase):
         return self._channel.emit_is_supported
 
     def close(self):
+        self._closed = True
         if self._heartbeat_task is not None:
             self._heartbeat_task.kill()
             self._heartbeat_task = None
@@ -75,13 +77,14 @@ class HeartBeatOnChannel(ChannelBase):
                 self._remote_last_hb = time.time()
             if time.time() > self._remote_last_hb + self._heartbeat_freq * 2:
                 self._lost_remote = True
-                gevent.kill(self._parent_coroutine,
-                        self._lost_remote_exception())
+                if not self._closed:
+                    gevent.kill(self._parent_coroutine,
+                            self._lost_remote_exception())
                 break
             self._channel.emit('_zpc_hb', (0,))  # 0 -> compat with protocol v2
 
     def _start_heartbeat(self):
-        if self._heartbeat_task is None and self._heartbeat_freq is not None:
+        if self._heartbeat_task is None and self._heartbeat_freq is not None and not self._closed:
             self._heartbeat_task = gevent.spawn(self._heartbeat)
 
     def _recver(self):

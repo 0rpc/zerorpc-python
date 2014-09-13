@@ -171,7 +171,6 @@ class BufferedChannel(ChannelBase):
         self._input_queue_reserved = 1
         self._remote_can_recv = gevent.event.Event()
         self._input_queue = gevent.queue.Queue()
-        self._lost_remote = False
         self._verbose = False
         self._on_close_if = None
         self._recv_task = gevent.spawn(self._recver)
