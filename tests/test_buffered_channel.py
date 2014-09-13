@@ -393,29 +393,28 @@ def test_congestion_control_server_pushing():
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
-    client_channel = client.channel()
-    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
-    client_bufchan = zerorpc.BufferedChannel(client_hbchan, inqueue_size=100)
-
-    event = server.recv()
-    server_channel = server.channel(event)
-    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
-    server_bufchan = zerorpc.BufferedChannel(server_hbchan, inqueue_size=100)
-
     read_cnt = 0
 
     def client_do():
+        client_channel = client.channel()
+        client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
+        client_bufchan = zerorpc.BufferedChannel(client_hbchan, inqueue_size=100)
         for x in xrange(200):
             event = client_bufchan.recv()
             assert event.name == 'coucou'
             assert event.args == x
+            global read_cnt
             read_cnt += 1
-        raise Exception('CLIENT DONE')
+        client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
     coro_pool.spawn(client_do)
 
     def server_do():
+        event = server.recv()
+        server_channel = server.channel(event)
+        server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
+        server_bufchan = zerorpc.BufferedChannel(server_hbchan, inqueue_size=100)
         if sys.version_info < (2, 7):
             def _do_with_assert_raises():
                 for x in xrange(200):
@@ -437,8 +436,7 @@ def test_congestion_control_server_pushing():
                     server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 100
         for x in xrange(read_cnt, 200):
             server_bufchan.emit('coucou', x) # block until receiver is ready
-        raise Exception('SERVER DONE')
-
+        server_bufchan.close()
 
     coro_pool.spawn(server_do)
     try:
@@ -446,10 +444,5 @@ def test_congestion_control_server_pushing():
     except zerorpc.LostRemote:
         pass
     finally:
-        try:
-            client_bufchan.close()
-            client.close()
-            server_bufchan.close()
-            server.close()
-        except Exception:
-            pass
+        client.close()
+        server.close()
