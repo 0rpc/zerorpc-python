@@ -81,7 +81,9 @@ class ServerBase(object):
 
     @staticmethod
     def _extract_name(methods):
-        return getattr(type(methods), '__name__', None) or repr(methods)
+        return getattr(methods, '__name__', None) \
+            or getattr(type(methods), '__name__', None) \
+            or repr(methods)
 
     def close(self):
         self.stop()
