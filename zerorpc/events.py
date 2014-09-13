@@ -210,7 +210,7 @@ class Event(object):
             except Exception:
                 pass
         if self._identity:
-            identity = ', '.join(repr(x) for x in self._identity)
+            identity = ', '.join(repr(x.bytes) for x in self._identity)
             return '<{0}> {1} {2} {3}'.format(identity, self._name,
                     self._header, args)
         return '{0} {1} {2}'.format(self._name, self._header, args)
