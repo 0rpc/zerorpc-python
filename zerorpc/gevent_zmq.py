@@ -100,7 +100,7 @@ class Socket(_zmq.Socket):
         while True:
             try:
                 return super(Socket, self).connect(*args, **kwargs)
-            except _zmq.ZMQError, e:
+            except _zmq.ZMQError as e:
                 if e.errno not in (_zmq.EAGAIN, errno.EINTR):
                     raise
 
@@ -122,7 +122,7 @@ class Socket(_zmq.Socket):
                 # send and recv on the socket.
                 self._on_state_changed()
                 return msg
-            except _zmq.ZMQError, e:
+            except _zmq.ZMQError as e:
                 if e.errno not in (_zmq.EAGAIN, errno.EINTR):
                     raise
             self._writable.clear()
@@ -162,7 +162,7 @@ class Socket(_zmq.Socket):
                 # send and recv on the socket.
                 self._on_state_changed()
                 return msg
-            except _zmq.ZMQError, e:
+            except _zmq.ZMQError as e:
                 if e.errno not in (_zmq.EAGAIN, errno.EINTR):
                     raise
             self._readable.clear()

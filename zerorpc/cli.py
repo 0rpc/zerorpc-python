@@ -82,7 +82,7 @@ parser.add_argument('params', nargs='*',
 def setup_links(args, socket):
     if args.bind:
         for endpoint in args.bind:
-            print 'binding to "{0}"'.format(endpoint)
+            print('binding to "{0}"'.format(endpoint))
             socket.bind(endpoint)
     addresses = []
     if args.address:
@@ -90,7 +90,7 @@ def setup_links(args, socket):
     if args.connect:
         addresses.extend(args.connect)
     for endpoint in addresses:
-        print 'connecting to "{0}"'.format(endpoint)
+        print('connecting to "{0}"'.format(endpoint))
         socket.connect(endpoint)
 
 
@@ -110,7 +110,7 @@ def run_server(args):
 
     server = zerorpc.Server(server_obj, heartbeat=args.heartbeat)
     setup_links(args, server)
-    print 'serving "{0}"'.format(server_obj_path)
+    print('serving "{0}"'.format(server_obj_path))
     return server.run()
 
 
@@ -214,16 +214,16 @@ def run_client(args):
                 long_doc=False, include_argspec=args.inspect)
         if args.inspect:
             for (name, doc) in detailled_methods:
-                print name
+                print(name)
         else:
             for (name, doc) in detailled_methods:
-                print '{0} {1}'.format(name.ljust(longest_name_len), doc)
+                print('{0} {1}'.format(name.ljust(longest_name_len), doc))
         return
     if args.inspect:
         (longest_name_len, detailled_methods) = zerorpc_inspect(client,
                 method=args.command)
         (name, doc) = detailled_methods[0]
-        print '\n{0}\n\n{1}\n'.format(name, doc)
+        print('\n{0}\n\n{1}\n'.format(name, doc))
         return
     if args.json:
         call_args = [json.loads(x) for x in args.params]
