@@ -1,25 +1,51 @@
-# ZeroRPC Protocol
+# zerorpc Protocol
 
 THIS DOCUMENT IS INCOMPLETE, WORK IN PROGRESS!
 
-This document attempts to define the ZeroRPC protocol.
+This document attempts to define the zerorpc protocol.
 
 ## Introduction & History
 
-[ZeroRPC](http://zerorpc.dotcloud.com) is a modern communication layer for distributed systems built on top of [ZeroMQ](http://zeromq.org), developed at [dotCloud](http://dotcloud.com) since 2010 and open-sourced in 2012. It features a dead-simple API for exposing any object or module over the network, and a powerful gevent implementation which supports multiple ZMQ socket types, streaming, heartbeats and more. It also includes a simple command-line tool for interactive querying and introspection. The platform team at dotCloud uses it in production to transmit millions of messages per day across hundreds of services.
+zerorpc features a dead-simple API for exposing any object or module over the
+network, and a powerful gevent implementation which supports multiple ZMQ
+socket types, streaming, heartbeats and more. It also includes a simple
+command-line tool for interactive querying and introspection.
 
-ZeroRPC uses ZMQ as a transport, but uses a communication protocol that is transport-agnostic. For a long time the reference documentation for that protocol was the python code itself. However since its recent surge in popularity many people have expressed interest in porting it to other programming languages. We hope that this standalone protocol documentation will help them.
-
-A short warning: ZeroRPC started as a simple tool to solve a simple problem. It was progressively refined and improved to satisfy the growing needs of the dotCloud platform. The emphasis is on practicality, robustness and operational simplicity - sometimes at the expense of formal elegance and optimizations. We will gladly welcome patches focused on the latter so long as they don't hurt the former.
+zerorpc uses ZMQ as a transport, but uses a communication protocol that is
+transport-agnostic. For a long time the reference documentation for that
+protocol was the python code itself. However since its recent surge in
+popularity many people have expressed interest in porting it to other
+programming languages. We hope that this standalone protocol documentation will
+help them.
 
 > The python implementation of zerorpc act as a reference for the whole
 > protocol.  New features and experiments are implemented and tested in this
-> version first.  This is also this implementation that is powering dotCloud's
-> infrastructure.
+> version first.
+
+[zerorpc](http://www.zerorpc.io) is a modern communication layer for
+distributed systems built on top of [ZeroMQ](http://zeromq.org), initially
+developed at [dotCloud](http://www.dotcloud.com) starting in 2010 and
+open-sourced in 2012. when dotCloud pivoted to [Docker](http://www.docker.com),
+dotCloud was acquired by [cloudControl](https://www.cloudcontrol.com/), which
+then migrated over to theirs own PaaS before shutting it down.
+
+In 2015, I (François-Xavier Bourlet) was given zerorpc by cloudControl, in an
+attempt to revive the project, maintain it, and hopefully drive its
+development.
+
+### Warning
+
+A short warning: zerorpc started as a simple tool to solve a simple problem. It
+was progressively refined and improved to satisfy the growing needs of the
+dotCloud platform. The emphasis is on practicality, robustness and operational
+simplicity - sometimes at the expense of formal elegance and optimizations. We
+will gladly welcome patches focused on the latter so long as they don't hurt
+the former.
+
 
 ## Layers
 
-Before diving into any details, let's divide ZeroRPC's protocol in three
+Before diving into any details, let's divide zerorpc's protocol in three
 different layers:
 
  1. Wire (or transport) layer; a combination of ZMQ <http://www.zeromq.org/>
@@ -34,15 +60,15 @@ The wire layer is a combination of ZMQ and msgpack.
 
 The basics:
 
- - A ZeroRPC server can listen on as many ZMQ sockets as you like. Actually,
+ - A zerorpc server can listen on as many ZMQ sockets as you like. Actually,
    a ZMQ socket can bind to multiple addresses. It can even *connect* to the
    clients (think about it as a worker connecting to a hub), but there are
-   some limitations in that case (see below). ZeroRPC doesn't
+   some limitations in that case (see below). zerorpc doesn't
    have to do anything specific for that: ZMQ handles it automatically.
- - A ZeroRPC client can connect to multiple ZeroRPC servers. However, it should
+ - A zerorpc client can connect to multiple zerorpc servers. However, it should
    create a new ZMQ socket for each connection.
 
-Since ZeroRPC implements heartbeat and streaming, it expects a kind of
+Since zerorpc implements heartbeat and streaming, it expects a kind of
 persistent, end-to-end, connection between the client and the server.
 It means that we cannot use the load-balancing features built into ZMQ.
 Otherwise, the various messages composing a single conversation could
@@ -52,12 +78,12 @@ That's why there are limitations when the server connects to the client:
 if there are multiple servers connecting to the same client, bad things
 will happen.
 
-> Note that the current implementation of ZeroRPC for Python doesn't implement
+> Note that the current implementation of zerorpc for Python doesn't implement
 > its own load-balancing (yet), and still uses one ZMQ socket for connecting to
 > many servers. You can still use ZMQ load-balancing if you accept to disable
 > heartbeat and don't use streamed responses.
 
-Every event from the event layer will be serialized with msgpack. 
+Every event from the event layer will be serialized with msgpack.
 
 
 ## Event layer
@@ -140,18 +166,18 @@ size of its local buffer. This is a hint for the remote, to tell it "send me
 more data!"
 
  - Event's name: '\_zpc\_more'
- - Event's args: integer representing how many entries are available in the client's buffer. 
+ - Event's args: integer representing how many entries are available in the client's buffer.
 
 FIXME WIP
 
 ## RPC Layer
 
-In the first version of ZeroRPC, this was the main (and only) layer.
+In the first version of zerorpc, this was the main (and only) layer.
 Three kinds of events can occur at this layer: request (=function call),
-response (=function return), error (=exception). 
+response (=function return), error (=exception).
 
 Request:
- 
+
  - Event's name: string with the name of the method to call.
  - Event's args: tuple of arguments for the method.
 
@@ -160,14 +186,14 @@ support them. If you absolutely want to call functions with keyword
 arguments, you can use a wrapper; e.g. expose a function like
 "call_with_kwargs(function_name, args, kwargs)", where args is a list,
 and kwargs a dict. It might be an interesting idea to add such a
-helper function into ZeroRPC default methods (see below for definitions
+helper function into zerorpc default methods (see below for definitions
 of existing default methods).
 
 Response:
 
  - Event's name: string "OK"
  - Event's args: tuple containing the returned value
- 
+
 > Note that if the return value is a tuple, it is itself wrapped inside a
 > tuple - again, for backward compatibility reasons.
 
@@ -178,7 +204,7 @@ exception is raised), we use the ERR event.
 
  - Event's name: string "ERR"
  - Event's args: tuple of 3 strings:
- 	- Name of the error (it should be the exception class name, or another
+	- Name of the error (it should be the exception class name, or another
 	  meaningful keyword).
 	- Human representation of the error (preferably in english).
 	- If possible a pretty printed traceback of the call stack when the error occured.
@@ -190,7 +216,7 @@ exception is raised), we use the ERR event.
 
 ### Default calls
 
-When exposing some code with ZeroRPC, a number of methods/functions are
+When exposing some code with zerorpc, a number of methods/functions are
 automatically added, to provide useful debugging and development tools.
 
  - \_zerorpc\_ping() just answers with a pong message.
@@ -213,7 +239,7 @@ Messages part of a stream:
 
  - Event's name: string "STREAM"
  - Event's args: tuple containing the streamed value
- 
+
 When the STREAM reaches its end:
 
  - Event's name: string "STREAM\_DONE"

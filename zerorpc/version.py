@@ -2,7 +2,7 @@
 # Open Source Initiative OSI - The MIT License (MIT):Licensing
 #
 # The MIT License (MIT)
-# Copyright (c) 2012 DotCloud Inc (opensource@dotcloud.com)
+# Copyright (c) 2015 François-Xavier Bourlet (bombela+zerorpc@gmail.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -24,6 +24,6 @@
 
 __title__ = 'zerorpc'
 __version__ = '0.4.4'
-__author__ = 'dotCloud, Inc.'
+__author__ = 'François-Xavier Bourlet <bombela+zerorpc@gmail.com>.'
 __license__ = 'MIT'
-__copyright__ = 'Copyright 2012 dotCloud, Inc.'
+__copyright__ = 'Copyright 2015 François-Xavier Bourlet <bombela+zerorpc@gmail.com>.'
