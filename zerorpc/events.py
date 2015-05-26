@@ -29,96 +29,131 @@ import gevent.queue
 import gevent.event
 import gevent.local
 import gevent.lock
-
+import logging
 
 import gevent_zmq as zmq
+from .exceptions import TimeoutExpired
 from .context import Context
+from .channel_base import ChannelBase
 
 
-class Sender(object):
+class SequentialSender(object):
+
+    def __init__(self, socket):
+        self._socket = socket
+
+    def _send(self, parts):
+        e = None
+        for i in xrange(len(parts) - 1):
+            try:
+                self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
+            except (gevent.GreenletExit, gevent.Timeout) as e:
+                if i == 0:
+                    raise
+                self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
+        try:
+            self._socket.send(parts[-1], copy=False)
+        except (gevent.GreenletExit, gevent.Timeout) as e:
+            self._socket.send(parts[-1], copy=False)
+        if e:
+            raise e
+
+    def __call__(self, parts, timeout=None):
+        if timeout:
+            with gevent.Timeout(timeout):
+                self._send(parts)
+        else:
+            self._send(parts)
+
+
+class SequentialReceiver(object):
+
+    def __init__(self, socket):
+        self._socket = socket
+
+    def _recv(self):
+        e = None
+        parts = []
+        while True:
+            try:
+                part = self._socket.recv(copy=False)
+            except (gevent.GreenletExit, gevent.Timeout) as e:
+                if len(parts) == 0:
+                    raise
+                part = self._socket.recv(copy=False)
+            parts.append(part)
+            if not part.more:
+                break
+        if e:
+            raise e
+        return parts
+
+    def __call__(self, timeout=None):
+        if timeout:
+            with gevent.Timeout(timeout):
+                return self._recv()
+        else:
+            return self._recv()
+
+
+class Sender(SequentialSender):
 
     def __init__(self, socket):
         self._socket = socket
         self._send_queue = gevent.queue.Channel()
         self._send_task = gevent.spawn(self._sender)
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         if self._send_task:
             self._send_task.kill()
 
     def _sender(self):
-        running = True
         for parts in self._send_queue:
-            for i in xrange(len(parts) - 1):
-                try:
-                    self._socket.send(parts[i], flags=zmq.SNDMORE)
-                except gevent.GreenletExit:
-                    if i == 0:
-                        return
-                    running = False
-                    self._socket.send(parts[i], flags=zmq.SNDMORE)
-            self._socket.send(parts[-1])
-            if not running:
-                return
+            super(Sender, self)._send(parts)
 
-    def __call__(self, parts):
-        self._send_queue.put(parts)
+    def __call__(self, parts, timeout=None):
+        try:
+            self._send_queue.put(parts, timeout=timeout)
+        except gevent.queue.Full:
+            raise TimeoutExpired(timeout)
 
 
-class Receiver(object):
+class Receiver(SequentialReceiver):
 
     def __init__(self, socket):
         self._socket = socket
         self._recv_queue = gevent.queue.Channel()
         self._recv_task = gevent.spawn(self._recver)
 
-    def __del__(self):
-        self.close()
-
     def close(self):
         if self._recv_task:
             self._recv_task.kill()
+        self._recv_queue = None
 
     def _recver(self):
-        running = True
         while True:
-            parts = []
-            while True:
-                try:
-                    part = self._socket.recv()
-                except gevent.GreenletExit:
-                    running = False
-                    if len(parts) == 0:
-                        return
-                    part = self._socket.recv()
-                parts.append(part)
-                if not self._socket.getsockopt(zmq.RCVMORE):
-                    break
-            if not running:
-                break
+            parts = super(Receiver, self)._recv()
             self._recv_queue.put(parts)
 
-    def __call__(self):
-        return self._recv_queue.get()
+    def __call__(self, timeout=None):
+        try:
+            return self._recv_queue.get(timeout=timeout)
+        except gevent.queue.Empty:
+            raise TimeoutExpired(timeout)
 
 
 class Event(object):
 
-    __slots__ = ['_name', '_args', '_header']
+    __slots__ = ['_name', '_args', '_header', '_identity']
 
     def __init__(self, name, args, context, header=None):
         self._name = name
         self._args = args
         if header is None:
-            self._header = {
-                'message_id': context.new_msgid(),
-                'v': 3
-            }
+            self._header = {'message_id': context.new_msgid(), 'v': 3}
         else:
             self._header = header
+        self._identity = None
 
     @property
     def header(self):
@@ -135,6 +170,14 @@ class Event(object):
     @property
     def args(self):
         return self._args
+
+    @property
+    def identity(self):
+        return self._identity
+
+    @identity.setter
+    def identity(self, v):
+        self._identity = v
 
     def pack(self):
         return msgpack.Packer().pack((self._header, self._name, self._args))
@@ -164,27 +207,43 @@ class Event(object):
             args = self._args
             try:
                 args = '<<{0}>>'.format(str(self.unpack(self._args)))
-            except:
+            except Exception:
                 pass
-        return '{0} {1} {2}'.format(self._name, self._header,
-                args)
+        if self._identity:
+            identity = ', '.join(repr(x.bytes) for x in self._identity)
+            return '<{0}> {1} {2} {3}'.format(identity, self._name,
+                    self._header, args)
+        return '{0} {1} {2}'.format(self._name, self._header, args)
 
 
-class Events(object):
+class Events(ChannelBase):
     def __init__(self, zmq_socket_type, context=None):
+        self._debug = False
         self._zmq_socket_type = zmq_socket_type
         self._context = context or Context.get_instance()
-        self._socket = zmq.Socket(self._context, zmq_socket_type)
-        self._send = self._socket.send_multipart
-        self._recv = self._socket.recv_multipart
+        self._socket = self._context.socket(zmq_socket_type)
+
         if zmq_socket_type in (zmq.PUSH, zmq.PUB, zmq.DEALER, zmq.ROUTER):
             self._send = Sender(self._socket)
+        elif zmq_socket_type in (zmq.REQ, zmq.REP):
+            self._send = SequentialSender(self._socket)
+        else:
+            self._send = None
+
         if zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER):
             self._recv = Receiver(self._socket)
+        elif zmq_socket_type in (zmq.REQ, zmq.REP):
+            self._recv = SequentialReceiver(self._socket)
+        else:
+            self._recv = None
 
     @property
-    def recv_is_available(self):
-        return self._zmq_socket_type in (zmq.PULL, zmq.SUB, zmq.DEALER, zmq.ROUTER)
+    def recv_is_supported(self):
+        return self._recv is not None
+
+    @property
+    def emit_is_supported(self):
+        return self._send is not None
 
     def __del__(self):
         try:
@@ -204,6 +263,19 @@ class Events(object):
             pass
         self._socket.close()
 
+    @property
+    def debug(self):
+        return self._debug
+
+    @debug.setter
+    def debug(self, v):
+        if v != self._debug:
+            self._debug = v
+            if self._debug:
+                logging.debug('debug enabled')
+            else:
+                logging.debug('debug disabled')
+
     def _resolve_endpoint(self, endpoint, resolve=True):
         if resolve:
             endpoint = self._context.hook_resolve_endpoint(endpoint)
@@ -218,50 +290,49 @@ class Events(object):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.connect(endpoint_))
+            logging.debug('connected to %s (status=%s)', endpoint_, r[-1])
         return r
 
     def bind(self, endpoint, resolve=True):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.bind(endpoint_))
+            logging.debug('bound to %s (status=%s)', endpoint_, r[-1])
         return r
 
-    def create_event(self, name, args, xheader=None):
-        xheader = {} if xheader is None else xheader
+    def new_event(self, name, args, xheader=None):
         event = Event(name, args, context=self._context)
-        for k, v in xheader.items():
-            if k == 'zmqid':
-                continue
-            event.header[k] = v
+        if xheader:
+            event.header.update(xheader)
         return event
 
-    def emit_event(self, event, identity=None):
-        if identity is not None:
-            parts = list(identity)
+    def emit_event(self, event, timeout=None):
+        if self._debug:
+            logging.debug('--> %s', event)
+        if event.identity:
+            parts = list(event.identity or list())
             parts.extend(['', event.pack()])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
             parts = ('', event.pack())
         else:
             parts = (event.pack(),)
-        self._send(parts)
+        self._send(parts, timeout)
 
-    def emit(self, name, args, xheader=None):
-        xheader = {} if xheader is None else xheader
-        event = self.create_event(name, args, xheader)
-        identity = xheader.get('zmqid', None)
-        return self.emit_event(event, identity)
-
-    def recv(self):
-        parts = self._recv()
-        if len(parts) == 1:
-            identity = None
-            blob = parts[0]
-        else:
+    def recv(self, timeout=None):
+        parts = self._recv(timeout=timeout)
+        if len(parts) > 2:
             identity = parts[0:-2]
             blob = parts[-1]
+        elif len(parts) == 2:
+            identity = parts[0:-1]
+            blob = parts[-1]
+        else:
+            identity = None
+            blob = parts[0]
         event = Event.unpack(blob)
-        if identity is not None:
-            event.header['zmqid'] = identity
+        event.identity = identity
+        if self._debug:
+            logging.debug('<-- %s', event)
         return event
 
     def setsockopt(self, *args):
@@ -270,40 +341,3 @@ class Events(object):
     @property
     def context(self):
         return self._context
-
-
-class WrappedEvents(object):
-
-    def __init__(self, channel):
-        self._channel = channel
-
-    def close(self):
-        pass
-
-    @property
-    def recv_is_available(self):
-        return self._channel.recv_is_available
-
-    def create_event(self, name, args, xheader=None):
-        xheader = {} if xheader is None else xheader
-        event = Event(name, args, self._channel.context)
-        event.header.update(xheader)
-        return event
-
-    def emit_event(self, event, identity=None):
-        event_payload = (event.header, event.name, event.args)
-        wrapper_event = self._channel.create_event('w', event_payload)
-        self._channel.emit_event(wrapper_event)
-
-    def emit(self, name, args, xheader=None):
-        wrapper_event = self.create_event(name, args, xheader)
-        self.emit_event(wrapper_event)
-
-    def recv(self, timeout=None):
-        wrapper_event = self._channel.recv()
-        (header, name, args) = wrapper_event.args
-        return Event(name, args, None, header)
-
-    @property
-    def context(self):
-        return self._channel.context

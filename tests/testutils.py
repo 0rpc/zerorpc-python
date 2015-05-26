@@ -52,3 +52,9 @@ def skip(reason):
             raise nose.exc.SkipTest(reason)
         return wrap
     return _skip
+
+try:
+    TIME_FACTOR = float(os.environ.get('ZPC_TEST_TIME_FACTOR'))
+    print 'ZPC_TEST_TIME_FACTOR:', TIME_FACTOR
+except TypeError:
+    TIME_FACTOR = 1.0

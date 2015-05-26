@@ -26,13 +26,15 @@
 import gevent
 
 from zerorpc import zmq
+from testutils import random_ipc_endpoint
 
 
 def test1():
+    endpoint = random_ipc_endpoint()
     def server():
         c = zmq.Context()
         s = c.socket(zmq.REP)
-        s.bind('tcp://0.0.0.0:9999')
+        s.bind(endpoint)
         while True:
             print 'srv recving...'
             r = s.recv()
@@ -46,7 +48,7 @@ def test1():
     def client():
         c = zmq.Context()
         s = c.socket(zmq.REQ)
-        s.connect('tcp://localhost:9999')
+        s.connect(endpoint)
 
         print 'cli sending...'
         s.send('hello')

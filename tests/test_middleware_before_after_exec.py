@@ -25,7 +25,7 @@
 import gevent
 import zerorpc
 
-from testutils import random_ipc_endpoint
+from testutils import random_ipc_endpoint, TIME_FACTOR
 
 class EchoModule(object):
 
@@ -91,7 +91,7 @@ def test_hook_server_before_exec_puller():
 
     # Test without a middleware
     test_client.echo("test")
-    trigger.wait(timeout=2)
+    trigger.wait(timeout=TIME_FACTOR * 2)
     assert echo_module.last_msg == "echo: test"
     trigger.clear()
 
@@ -100,7 +100,7 @@ def test_hook_server_before_exec_puller():
     zero_ctx.register_middleware(test_middleware)
     assert test_middleware.called == False
     test_client.echo("test with a middleware")
-    trigger.wait(timeout=2)
+    trigger.wait(timeout=TIME_FACTOR * 2)
     assert echo_module.last_msg == "echo: test with a middleware"
     assert test_middleware.called == True
 
@@ -183,7 +183,7 @@ def test_hook_server_after_exec_puller():
 
     # Test without a middleware
     test_client.echo("test")
-    trigger.wait(timeout=2)
+    trigger.wait(timeout=TIME_FACTOR * 2)
     assert echo_module.last_msg == "echo: test"
     trigger.clear()
 
@@ -192,7 +192,7 @@ def test_hook_server_after_exec_puller():
     zero_ctx.register_middleware(test_middleware)
     assert test_middleware.called == False
     test_client.echo("test with a middleware")
-    trigger.wait(timeout=2)
+    trigger.wait(timeout=TIME_FACTOR * 2)
     assert echo_module.last_msg == "echo: test with a middleware"
     assert test_middleware.called == True
     assert test_middleware.request_event_name == 'echo'
@@ -288,7 +288,7 @@ def test_hook_server_after_exec_on_error_puller():
     assert test_middleware.called == False
     try:
         test_client.echo("test with a middleware")
-        trigger.wait(timeout=2)
+        trigger.wait(timeout=TIME_FACTOR * 2)
     except zerorpc.RemoteError:
         pass
     assert echo_module.last_msg == "Raise"

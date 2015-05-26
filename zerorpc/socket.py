@@ -41,3 +41,11 @@ class SocketBase(object):
 
     def bind(self, endpoint, resolve=True):
         return self._events.bind(endpoint, resolve)
+
+    @property
+    def debug(self):
+        return self._events.debug
+
+    @debug.setter
+    def debug(self, v):
+        self._events.debug = v

@@ -26,7 +26,7 @@
 import gevent
 
 import zerorpc
-from testutils import teardown, random_ipc_endpoint
+from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_rcp_streaming():
@@ -42,11 +42,11 @@ def test_rcp_streaming():
         def xrange(self, max):
             return xrange(max)
 
-    srv = MySrv(heartbeat=2)
+    srv = MySrv(heartbeat=TIME_FACTOR * 4)
     srv.bind(endpoint)
     gevent.spawn(srv.run)
 
-    client = zerorpc.Client(heartbeat=2)
+    client = zerorpc.Client(heartbeat=TIME_FACTOR * 4)
     client.connect(endpoint)
 
     r = client.range(10)
@@ -56,7 +56,7 @@ def test_rcp_streaming():
     assert getattr(r, 'next', None) is not None
     l = []
     print 'wait 4s for fun'
-    gevent.sleep(4)
+    gevent.sleep(TIME_FACTOR * 4)
     for x in r:
         l.append(x)
     assert l == range(10)

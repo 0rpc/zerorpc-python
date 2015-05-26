@@ -2,7 +2,7 @@
 # Open Source Initiative OSI - The MIT License (MIT):Licensing
 #
 # The MIT License (MIT)
-# Copyright (c) 2015 François-Xavier Bourlet (bombela+zerorpc@gmail.com)
+# Copyright (c) 2014 François-Xavier Bourlet (bombela@gmail.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -22,45 +22,33 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# execfile() doesn't exist in Python 3, this way we are compatible with both.
-exec(compile(open('zerorpc/version.py').read(), 'zerorpc/version.py', 'exec'))
 
-import sys
+class ChannelBase(object):
 
+    @property
+    def context(self):
+        raise NotImplementedError()
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+    @property
+    def recv_is_supported(self):
+        raise NotImplementedError()
 
+    @property
+    def emit_is_supported(self):
+        raise NotImplementedError()
 
-requirements = [
-    'gevent>=1.0',
-    'msgpack-python',
-    'pyzmq>=13.1.0'
-]
-if sys.version_info < (2, 7):
-    requirements.append('argparse')
+    def close(self):
+        raise NotImplementedError()
 
+    def new_event(self, name, args, xheader=None):
+        raise NotImplementedError()
 
-setup(
-    name='zerorpc',
-    version=__version__,
-    description='zerorpc is a flexible RPC based on zeromq.',
-    author=__author__,
-    url='https://github.com/0rpc/zerorpc-python',
-    packages=['zerorpc'],
-    install_requires=requirements,
-    tests_require=['nose'],
-    test_suite='nose.collector',
-    zip_safe=False,
-    entry_points={'console_scripts': ['zerorpc = zerorpc.cli:main']},
-    license='MIT',
-    classifiers=(
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Natural Language :: English',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
-    ),
-)
+    def emit_event(self, event, timeout=None):
+        raise NotImplementedError()
+
+    def emit(self, name, args, xheader=None, timeout=None):
+        event = self.new_event(name, args, xheader)
+        return self.emit_event(event, timeout)
+
+    def recv(self, timeout=None):
+        raise NotImplementedError()

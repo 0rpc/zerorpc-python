@@ -144,8 +144,9 @@ def test_events_dealer_router():
         assert event.name == 'myevent' + str(i)
         assert list(event.args) == [i]
 
-        server.emit('answser' + str(i * 2), (i * 2,),
-                xheader=dict(zmqid=event.header['zmqid']))
+        reply_event = server.new_event('answser' + str(i * 2), (i * 2,))
+        reply_event.identity = event.identity
+        server.emit_event(reply_event)
         event = client.recv()
         print event
         assert event.name == 'answser' + str(i * 2)

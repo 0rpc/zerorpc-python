@@ -68,20 +68,21 @@ class ServerBase(object):
 
     @staticmethod
     def _filter_methods(cls, self, methods):
-        if hasattr(methods, '__getitem__'):
+        if isinstance(methods, dict):
             return methods
-        server_methods = set(getattr(self, k) for k in dir(cls) if not
-                             k.startswith('_'))
+        server_methods = set(k for k in dir(cls) if not k.startswith('_'))
         return dict((k, getattr(methods, k))
-                    for k in dir(methods)
-                    if (callable(getattr(methods, k))
-                        and not k.startswith('_')
-                        and getattr(methods, k) not in server_methods
-                        ))
+                for k in dir(methods)
+                if callable(getattr(methods, k))
+                and not k.startswith('_')
+                and k not in server_methods
+                )
 
     @staticmethod
     def _extract_name(methods):
-        return getattr(type(methods), '__name__', None) or repr(methods)
+        return getattr(methods, '__name__', None) \
+            or getattr(type(methods), '__name__', None) \
+            or repr(methods)
 
     def close(self):
         self.stop()
@@ -152,7 +153,7 @@ class ServerBase(object):
         except Exception:
             exc_infos = list(sys.exc_info())
             human_exc_infos = self._print_traceback(protocol_v1, exc_infos)
-            reply_event = bufchan.create_event('ERR', human_exc_infos,
+            reply_event = bufchan.new_event('ERR', human_exc_infos,
                     self._context.hook_get_task_context())
             self._context.hook_server_inspect_exception(event, reply_event, exc_infos)
             bufchan.emit_event(reply_event)
@@ -206,27 +207,31 @@ class ClientBase(object):
         return exception
 
     def _select_pattern(self, event):
-        for pattern in patterns.patterns_list:
+        for pattern in self._context.hook_client_patterns_list(
+                patterns.patterns_list):
             if pattern.accept_answer(event):
                 return pattern
-        msg = 'Unable to find a pattern for: {0}'.format(event)
-        raise RuntimeError(msg)
+        return None
 
     def _process_response(self, request_event, bufchan, timeout):
-        try:
-            reply_event = bufchan.recv(timeout)
-            pattern = self._select_pattern(reply_event)
-            return pattern.process_answer(self._context, bufchan, request_event,
-                    reply_event, self._handle_remote_error)
-        except TimeoutExpired:
+        def raise_error(ex):
             bufchan.close()
-            ex = TimeoutExpired(timeout,
-                    'calling remote method {0}'.format(request_event.name))
             self._context.hook_client_after_request(request_event, None, ex)
             raise ex
-        except:
-            bufchan.close()
-            raise
+
+        try:
+            reply_event = bufchan.recv(timeout=timeout)
+        except TimeoutExpired:
+            raise_error(TimeoutExpired(timeout,
+                    'calling remote method {0}'.format(request_event.name)))
+
+        pattern = self._select_pattern(reply_event)
+        if pattern is None:
+            raise_error(RuntimeError(
+                'Unable to find a pattern for: {0}'.format(request_event)))
+
+        return pattern.process_answer(self._context, bufchan, request_event,
+                reply_event, self._handle_remote_error)
 
     def __call__(self, method, *args, **kargs):
         timeout = kargs.get('timeout', self._timeout)
@@ -236,25 +241,17 @@ class ClientBase(object):
         bufchan = BufferedChannel(hbchan, inqueue_size=kargs.get('slots', 100))
 
         xheader = self._context.hook_get_task_context()
-        request_event = bufchan.create_event(method, args, xheader)
+        request_event = bufchan.new_event(method, args, xheader)
         self._context.hook_client_before_request(request_event)
         bufchan.emit_event(request_event)
 
-        try:
-            if kargs.get('async', False) is False:
-                return self._process_response(request_event, bufchan, timeout)
+        if kargs.get('async', False) is False:
+            return self._process_response(request_event, bufchan, timeout)
 
-            async_result = gevent.event.AsyncResult()
-            gevent.spawn(self._process_response, request_event, bufchan,
-                    timeout).link(async_result)
-            return async_result
-        except:
-            # XXX: This is going to be closed twice if async is false and
-            # _process_response raises an exception. I wonder if the above
-            # async branch can raise an exception too, if no we can just remove
-            # this code.
-            bufchan.close()
-            raise
+        async_result = gevent.event.AsyncResult()
+        gevent.spawn(self._process_response, request_event, bufchan,
+                timeout).link(async_result)
+        return async_result
 
     def __getattr__(self, method):
         return lambda *args, **kargs: self(method, *args, **kargs)
@@ -405,9 +402,9 @@ def fork_task_context(functor, context=None):
             - if the new task will make any zerorpc call, it should be wrapped.
     '''
     context = context or Context.get_instance()
-    header = context.hook_get_task_context()
+    xheader = context.hook_get_task_context()
 
     def wrapped(*args, **kargs):
-        context.hook_load_task_context(header)
+        context.hook_load_task_context(xheader)
         return functor(*args, **kargs)
     return wrapped

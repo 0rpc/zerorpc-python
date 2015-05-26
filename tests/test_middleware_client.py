@@ -25,7 +25,7 @@
 import gevent
 import zerorpc
 
-from testutils import random_ipc_endpoint
+from testutils import random_ipc_endpoint, TIME_FACTOR
 
 class EchoModule(object):
 
@@ -59,7 +59,7 @@ class EchoModule(object):
 
     def timeout(self, msg):
         self.last_msg = "timeout: " + msg
-        gevent.sleep(2)
+        gevent.sleep(TIME_FACTOR * 2)
 
 def test_hook_client_before_request():
 
@@ -175,7 +175,7 @@ def test_hook_client_after_request_timeout():
     test_server.bind(endpoint)
     test_server_task = gevent.spawn(test_server.run)
 
-    test_client = zerorpc.Client(timeout=1, context=zero_ctx)
+    test_client = zerorpc.Client(timeout=TIME_FACTOR * 1, context=zero_ctx)
     test_client.connect(endpoint)
 
     assert test_middleware.called == False
@@ -211,7 +211,7 @@ def test_hook_client_after_request_remote_error():
     test_server.bind(endpoint)
     test_server_task = gevent.spawn(test_server.run)
 
-    test_client = zerorpc.Client(timeout=1, context=zero_ctx)
+    test_client = zerorpc.Client(timeout=TIME_FACTOR * 1, context=zero_ctx)
     test_client.connect(endpoint)
 
     assert test_middleware.called == False
@@ -234,7 +234,7 @@ def test_hook_client_after_request_remote_error_stream():
     test_server.bind(endpoint)
     test_server_task = gevent.spawn(test_server.run)
 
-    test_client = zerorpc.Client(timeout=1, context=zero_ctx)
+    test_client = zerorpc.Client(timeout=TIME_FACTOR * 1, context=zero_ctx)
     test_client.connect(endpoint)
 
     assert test_middleware.called == False

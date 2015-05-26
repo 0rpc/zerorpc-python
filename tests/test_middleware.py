@@ -32,7 +32,7 @@ import sys
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint
+from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_resolve_endpoint():
@@ -94,7 +94,7 @@ def test_resolve_endpoint_events():
             print 'heee'
             return 'world'
 
-    srv = Srv(heartbeat=1, context=c)
+    srv = Srv(heartbeat=TIME_FACTOR * 1, context=c)
     if sys.version_info < (2, 7):
         assert_raises(zmq.ZMQError, srv.bind, 'some_service')
     else:
@@ -106,7 +106,7 @@ def test_resolve_endpoint_events():
     srv.bind('some_service')
     gevent.spawn(srv.run)
 
-    client = zerorpc.Client(heartbeat=1, context=c)
+    client = zerorpc.Client(heartbeat=TIME_FACTOR * 1, context=c)
     client.connect('some_service')
     assert client.hello() == 'world'
 
@@ -373,20 +373,18 @@ def test_task_context_pubsub():
     trigger.clear()
     # We need this retry logic to wait that the subscriber.run coroutine starts
     # reading (the published messages will go to /dev/null until then).
-    for attempt in xrange(0, 10):
+    while not trigger.is_set():
         c.echo('pub...')
-        if trigger.wait(0.2):
+        if trigger.wait(TIME_FACTOR * 1):
             break
 
     subscriber.stop()
     subscriber_task.join()
 
-    assert publisher_tracer._log == [
-            ('new', publisher_tracer.trace_id),
-            ]
-    assert subscriber_tracer._log == [
-            ('load', publisher_tracer.trace_id),
-            ]
+    print publisher_tracer._log
+    assert ('new', publisher_tracer.trace_id) in publisher_tracer._log
+    print subscriber_tracer._log
+    assert ('load', publisher_tracer.trace_id) in subscriber_tracer._log
 
 
 class InspectExceptionMiddleware(Tracer):
@@ -459,7 +457,7 @@ def test_server_inspect_exception_middleware_puller():
 
     barrier.clear()
     client.echo('This is a test which should call the InspectExceptionMiddleware')
-    barrier.wait(timeout=2)
+    barrier.wait(timeout=TIME_FACTOR * 2)
 
     client.close()
     server.close()
