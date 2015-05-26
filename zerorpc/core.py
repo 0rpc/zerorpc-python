@@ -72,11 +72,11 @@ class ServerBase(object):
             return methods
         server_methods = set(k for k in dir(cls) if not k.startswith('_'))
         return dict((k, getattr(methods, k))
-                for k in dir(methods)
-                if callable(getattr(methods, k))
-                and not k.startswith('_')
-                and k not in server_methods
-                )
+                    for k in dir(methods)
+                    if callable(getattr(methods, k))
+                    and not k.startswith('_')
+                    and k not in server_methods
+                    )
 
     @staticmethod
     def _extract_name(methods):
