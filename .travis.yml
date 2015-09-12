@@ -4,6 +4,7 @@ python:
   - 2.7
 env:
   matrix:
+    - PYZMQ='pyzmq>=14'
     - PYZMQ='pyzmq>=14.3'
     - PYZMQ='pyzmq>=14.2,<14.3'
     - PYZMQ='pyzmq>=14.1,<14.2'
@@ -11,12 +12,15 @@ env:
     - PYZMQ='pyzmq<14'
 matrix:
   fast_finish: true
-script: 
+script:
   - flake8 --ignore=E501,E128 zerorpc bin
-  - ZPC_TEST_TIME_FACTOR=0.1 nosetests
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install python-dev libevent-dev
+  - ZPC_TEST_TIME_FACTOR=0.2 nosetests -v
+sudo: false
+addons:
+  apt:
+    packages:
+      - python-dev
+      - libevent-dev
 install:
   - pip install flake8
   - "pip install nose gevent msgpack-python $PYZMQ"
