@@ -166,7 +166,7 @@ def test_heartbeat_can_open_channel_client_close():
     client_bufchan.close()
     client.close()
     if sys.version_info < (2, 7):
-        assert_raises(zerorpc.LostRemote, server_coro.get())
+        assert_raises(zerorpc.LostRemote, server_coro.get)
     else:
         with assert_raises(zerorpc.LostRemote):
             server_coro.get()
@@ -393,7 +393,7 @@ def test_congestion_control_server_pushing():
     client_events.connect(endpoint)
     client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
 
-    read_cnt = 0
+    read_cnt = type('Dummy', (object,), { "value": 0 })
 
     def client_do():
         client_channel = client.channel()
@@ -403,8 +403,7 @@ def test_congestion_control_server_pushing():
             event = client_bufchan.recv()
             assert event.name == 'coucou'
             assert event.args == x
-            global read_cnt
-            read_cnt += 1
+            read_cnt.value += 1
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -434,7 +433,7 @@ def test_congestion_control_server_pushing():
             with assert_raises(zerorpc.TimeoutExpired):
                 for x in xrange(2, 200):
                     server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 100
-        for x in xrange(read_cnt, 200):
+        for x in xrange(read_cnt.value, 200):
             server_bufchan.emit('coucou', x) # block until receiver is ready
         server_bufchan.close()
 

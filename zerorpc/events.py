@@ -30,11 +30,20 @@ import gevent.event
 import gevent.local
 import gevent.lock
 import logging
+import sys
 
 import gevent_zmq as zmq
 from .exceptions import TimeoutExpired
 from .context import Context
 from .channel_base import ChannelBase
+
+
+if sys.version_info < (2, 7):
+    def get_pyzmq_frame_buffer(frame):
+        return frame.buffer[:]
+else:
+    def get_pyzmq_frame_buffer(frame):
+        return frame.buffer
 
 
 class SequentialSender(object):
@@ -329,7 +338,7 @@ class Events(ChannelBase):
         else:
             identity = None
             blob = parts[0]
-        event = Event.unpack(blob)
+        event = Event.unpack(get_pyzmq_frame_buffer(blob))
         event.identity = identity
         if self._debug:
             logging.debug('<-- %s', event)
