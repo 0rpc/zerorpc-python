@@ -46,6 +46,9 @@ else:
         return frame.buffer
 
 
+logger = logging.getLogger(__name__)
+
+
 class SequentialSender(object):
 
     def __init__(self, socket):
@@ -281,9 +284,9 @@ class Events(ChannelBase):
         if v != self._debug:
             self._debug = v
             if self._debug:
-                logging.debug('debug enabled')
+                logger.debug('debug enabled')
             else:
-                logging.debug('debug disabled')
+                logger.debug('debug disabled')
 
     def _resolve_endpoint(self, endpoint, resolve=True):
         if resolve:
@@ -299,14 +302,14 @@ class Events(ChannelBase):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.connect(endpoint_))
-            logging.debug('connected to %s (status=%s)', endpoint_, r[-1])
+            logger.debug('connected to %s (status=%s)', endpoint_, r[-1])
         return r
 
     def bind(self, endpoint, resolve=True):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.bind(endpoint_))
-            logging.debug('bound to %s (status=%s)', endpoint_, r[-1])
+            logger.debug('bound to %s (status=%s)', endpoint_, r[-1])
         return r
 
     def new_event(self, name, args, xheader=None):
@@ -317,7 +320,7 @@ class Events(ChannelBase):
 
     def emit_event(self, event, timeout=None):
         if self._debug:
-            logging.debug('--> %s', event)
+            logger.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
             parts.extend(['', event.pack()])
@@ -341,7 +344,7 @@ class Events(ChannelBase):
         event = Event.unpack(get_pyzmq_frame_buffer(blob))
         event.identity = identity
         if self._debug:
-            logging.debug('<-- %s', event)
+            logger.debug('<-- %s', event)
         return event
 
     def setsockopt(self, *args):
