@@ -40,7 +40,7 @@ def test1():
             r = s.recv()
             print('srv', r)
             print('srv sending...')
-            s.send('world')
+            s.send(b'world')
 
         s.close()
         c.term()
@@ -51,7 +51,7 @@ def test1():
         s.connect(endpoint)
 
         print('cli sending...')
-        s.send('hello')
+        s.send(b'hello')
         print('cli recving...')
         r = s.recv()
         print('cli', r)
