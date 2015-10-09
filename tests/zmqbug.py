@@ -23,7 +23,7 @@
 # SOFTWARE.
 #
 # Based on https://github.com/traviscline/gevent-zeromq/blob/master/gevent_zeromq/core.py
-
+from __future__ import print_function
 
 import zmq
 
@@ -79,7 +79,7 @@ class ZMQSocket(zmq.Socket):
         while True:
             try:
                 return super(ZMQSocket, self).send(data, flags, copy, track)
-            except zmq.ZMQError, e:
+            except zmq.ZMQError as e:
                 if e.errno != zmq.EAGAIN:
                     raise
             self._writable.clear()
@@ -92,14 +92,14 @@ class ZMQSocket(zmq.Socket):
         while True:
             try:
                 return super(ZMQSocket, self).recv(flags, copy, track)
-            except zmq.ZMQError, e:
+            except zmq.ZMQError as e:
                 if e.errno != zmq.EAGAIN:
                     raise
             self._readable.clear()
             while not self._readable.wait(timeout=10):
                 events = self.getsockopt(zmq.EVENTS)
                 if bool(events & zmq.POLLIN):
-                    print "here we go, nobody told me about new messages!"
+                    print("here we go, nobody told me about new messages!")
                     global STOP_EVERYTHING
                     STOP_EVERYTHING = True
                     raise gevent.GreenletExit()
@@ -125,7 +125,7 @@ def server():
     gevent.spawn(responder)
 
     while not STOP_EVERYTHING:
-        print "cnt.responded=", cnt.responded
+        print("cnt.responded=", cnt.responded)
         gevent.sleep(0.5)
 
 
@@ -156,7 +156,7 @@ def client():
     gevent.spawn(sendmsg)
 
     while not STOP_EVERYTHING:
-        print "cnt.recv=", cnt.recv, "cnt.send=", cnt.send
+        print("cnt.recv=", cnt.recv, "cnt.send=", cnt.send)
         gevent.sleep(0.5)
 
 gevent.spawn(server)

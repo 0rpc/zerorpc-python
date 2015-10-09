@@ -21,7 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from __future__ import print_function
 
 from nose.tools import assert_raises
 import gevent
@@ -32,7 +32,7 @@ import sys
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
+from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_resolve_endpoint():
@@ -47,13 +47,13 @@ def test_resolve_endpoint():
     cnt = c.register_middleware({
         'resolve_endpoint': resolve
         })
-    print 'registered_count:', cnt
+    print('registered_count:', cnt)
     assert cnt == 1
 
-    print 'resolve titi:', c.hook_resolve_endpoint('titi')
+    print('resolve titi:', c.hook_resolve_endpoint('titi'))
     assert c.hook_resolve_endpoint('titi') == test_endpoint
 
-    print 'resolve toto:', c.hook_resolve_endpoint('toto')
+    print('resolve toto:', c.hook_resolve_endpoint('toto'))
     assert c.hook_resolve_endpoint('toto') == 'toto'
 
     class Resolver():
@@ -64,18 +64,18 @@ def test_resolve_endpoint():
             return endpoint
 
     cnt = c.register_middleware(Resolver())
-    print 'registered_count:', cnt
+    print('registered_count:', cnt)
     assert cnt == 1
 
-    print 'resolve titi:', c.hook_resolve_endpoint('titi')
+    print('resolve titi:', c.hook_resolve_endpoint('titi'))
     assert c.hook_resolve_endpoint('titi') == test_endpoint
-    print 'resolve toto:', c.hook_resolve_endpoint('toto')
+    print('resolve toto:', c.hook_resolve_endpoint('toto'))
     assert c.hook_resolve_endpoint('toto') == test_endpoint
 
     c2 = zerorpc.Context()
-    print 'resolve titi:', c2.hook_resolve_endpoint('titi')
+    print('resolve titi:', c2.hook_resolve_endpoint('titi'))
     assert c2.hook_resolve_endpoint('titi') == 'titi'
-    print 'resolve toto:', c2.hook_resolve_endpoint('toto')
+    print('resolve toto:', c2.hook_resolve_endpoint('toto'))
     assert c2.hook_resolve_endpoint('toto') == 'toto'
 
 
@@ -91,7 +91,7 @@ def test_resolve_endpoint_events():
 
     class Srv(zerorpc.Server):
         def hello(self):
-            print 'heee'
+            print('heee')
             return 'world'
 
     srv = Srv(heartbeat=TIME_FACTOR * 1, context=c)
@@ -127,7 +127,7 @@ class Tracer:
 
     def load_task_context(self, event_header):
         self._locals.trace_id = event_header.get('trace_id', None)
-        print self._identity, 'load_task_context', self.trace_id
+        print(self._identity, 'load_task_context', self.trace_id)
         self._log.append(('load', self.trace_id))
 
     def get_task_context(self):
@@ -136,10 +136,10 @@ class Tracer:
             self._locals.trace_id = '<{0}>'.format(hashlib.md5(
                     str(random.random())[3:]
                     ).hexdigest()[0:6].upper())
-            print self._identity, 'get_task_context! [make a new one]', self.trace_id
+            print(self._identity, 'get_task_context! [make a new one]', self.trace_id)
             self._log.append(('new', self.trace_id))
         else:
-            print self._identity, 'get_task_context! [reuse]', self.trace_id
+            print(self._identity, 'get_task_context! [reuse]', self.trace_id)
             self._log.append(('reuse', self.trace_id))
         return { 'trace_id': self.trace_id }
 
@@ -274,9 +274,9 @@ def test_task_context_relay_fork():
                 return c_relay.echo(msg) + 'relayed'
             g = gevent.spawn(zerorpc.fork_task_context(dothework,
                 srv_relay_ctx), 'relay' + msg)
-            print 'relaying in separate task:', g
+            print('relaying in separate task:', g)
             r = g.get()
-            print 'back to main task'
+            print('back to main task')
             return r
 
     srv_relay = zerorpc.Server(SrvRelay(), context=srv_relay_ctx)
@@ -381,9 +381,9 @@ def test_task_context_pubsub():
     subscriber.stop()
     subscriber_task.join()
 
-    print publisher_tracer._log
+    print(publisher_tracer._log)
     assert ('new', publisher_tracer.trace_id) in publisher_tracer._log
-    print subscriber_tracer._log
+    print(subscriber_tracer._log)
     assert ('load', publisher_tracer.trace_id) in subscriber_tracer._log
 
 

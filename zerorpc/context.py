@@ -26,7 +26,7 @@
 import uuid
 import random
 
-import gevent_zmq as zmq
+from . import gevent_zmq as zmq
 
 
 class Context(zmq.Context):
@@ -114,7 +114,7 @@ class Context(zmq.Context):
     def register_middleware(self, middleware_instance):
         registered_count = 0
         self._middlewares.append(middleware_instance)
-        for hook in self._hooks.keys():
+        for hook in list(self._hooks.keys()):
             functor = getattr(middleware_instance, hook, None)
             if functor is None:
                 try:
