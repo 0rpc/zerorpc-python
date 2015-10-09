@@ -53,7 +53,7 @@ def test_rcp_streaming():
     assert list(r) == list(range(10))
 
     r = client.xrange(10)
-    assert getattr(r, '__next__', None) is not None
+    assert getattr(r, '__iter__', None) is not None
     l = []
     print('wait 4s for fun')
     gevent.sleep(TIME_FACTOR * 4)
