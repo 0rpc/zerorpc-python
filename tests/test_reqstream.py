@@ -35,12 +35,12 @@ def test_rcp_streaming():
     class MySrv(zerorpc.Server):
 
         @zerorpc.rep
-        def range(self, max):
-            return list(range(max))
+        def range(self, max_):
+            return list(range(max_))
 
         @zerorpc.stream
-        def xrange(self, max):
-            return range(max)
+        def xrange(self, max_):
+            return iter(range(max_))
 
     srv = MySrv(heartbeat=TIME_FACTOR * 4)
     srv.bind(endpoint)
@@ -53,7 +53,7 @@ def test_rcp_streaming():
     assert list(r) == list(range(10))
 
     r = client.xrange(10)
-    assert getattr(r, 'next', None) is not None
+    assert getattr(r, '__next__', None) is not None
     l = []
     print('wait 4s for fun')
     gevent.sleep(TIME_FACTOR * 4)
