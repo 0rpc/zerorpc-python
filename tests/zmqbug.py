@@ -147,7 +147,7 @@ def client():
 
     def sendmsg():
         while not STOP_EVERYTHING:
-            socket.send('', flags=zmq.SNDMORE)
+            socket.send(b'', flags=zmq.SNDMORE)
             socket.send('hello')
             cnt.send += 1
             gevent.sleep(0)

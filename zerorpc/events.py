@@ -117,7 +117,8 @@ class Sender(SequentialSender):
             self._send_task.kill()
 
     def _sender(self):
-        for parts in self._send_queue:
+        while True:
+            parts = self._send_queue.get()
             super(Sender, self)._send(parts)
 
     def __call__(self, parts, timeout=None):
@@ -320,9 +321,9 @@ class Events(ChannelBase):
             logging.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
-            parts.extend(['', event.pack()])
+            parts.extend([b'', event.pack()])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
-            parts = ('', event.pack())
+            parts = (b'', event.pack())
         else:
             parts = (event.pack(),)
         self._send(parts, timeout)
