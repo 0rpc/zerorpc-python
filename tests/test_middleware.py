@@ -28,6 +28,7 @@ import gevent
 import gevent.local
 import random
 import hashlib
+import string
 import sys
 
 from zerorpc import zmq
@@ -133,9 +134,7 @@ class Tracer:
     def get_task_context(self):
         if self.trace_id is None:
             # just an ugly code to generate a beautiful little hash.
-            self._locals.trace_id = '<{0}>'.format(hashlib.md5(
-                    str(random.random())[3:]
-                    ).hexdigest()[0:6].upper())
+            self._locals.trace_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
             print(self._identity, 'get_task_context! [make a new one]', self.trace_id)
             self._log.append(('new', self.trace_id))
         else:
