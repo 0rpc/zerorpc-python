@@ -169,3 +169,59 @@ def test_events_push_pull():
         print event
         assert event.name == 'myevent'
         assert list(event.args) == [x]
+
+
+def test_msgpack():
+    context = zerorpc.Context()
+    event = zerorpc.Event('myevent', ('a',), context=context)
+    print event
+    assert type(event.name) == str
+    for key in event.header.keys():
+        assert type(key) == str
+    assert type(event.header['message_id']) == str
+    assert type(event.args[0]) == str
+
+    packed = event.pack()
+    event = event.unpack(packed)
+    print event
+    assert type(event.name) == str
+    for key in event.header.keys():
+        assert type(key) == str
+    assert type(event.header['message_id']) == str
+    assert type(event.args[0]) == str
+
+    event = zerorpc.Event('myevent', (u'a',), context=context)
+    print event
+    assert type(event.name) == str
+    for key in event.header.keys():
+        assert type(key) == str
+    assert type(event.header['message_id']) == str
+    assert type(event.args[0]) == unicode
+
+    packed = event.pack()
+    event = event.unpack(packed)
+    print event
+    assert type(event.name) == str
+    for key in event.header.keys():
+        assert type(key) == str
+    assert type(event.header['message_id']) == str
+    assert type(event.args[0]) == unicode
+
+    event = zerorpc.Event('myevent', (u'a', 'b'), context=context)
+    print event
+    assert type(event.name) == str
+    for key in event.header.keys():
+        assert type(key) == str
+    assert type(event.header['message_id']) == str
+    assert type(event.args[0]) == unicode
+    assert type(event.args[1]) == str
+
+    packed = event.pack()
+    event = event.unpack(packed)
+    print event
+    assert type(event.name) == str
+    for key in event.header.keys():
+        assert type(key) == str
+    assert type(event.header['message_id']) == str
+    assert type(event.args[0]) == unicode
+    assert type(event.args[1]) == str

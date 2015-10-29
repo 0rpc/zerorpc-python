@@ -192,11 +192,11 @@ class Event(object):
         self._identity = v
 
     def pack(self):
-        return msgpack.Packer().pack((self._header, self._name, self._args))
+        return msgpack.Packer(use_bin_type=True).pack((self._header, self._name, self._args))
 
     @staticmethod
     def unpack(blob):
-        unpacker = msgpack.Unpacker()
+        unpacker = msgpack.Unpacker(encoding='utf-8')
         unpacker.feed(blob)
         unpacked_msg = unpacker.unpack()
 
