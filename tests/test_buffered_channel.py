@@ -445,3 +445,61 @@ def test_congestion_control_server_pushing():
     finally:
         client.close()
         server.close()
+
+
+def test_on_close_if():
+    """
+    Test that the on_close_if method does not cause exceptions when the client
+    is slow to recv() data.
+    """
+    endpoint = random_ipc_endpoint()
+    server_events = zerorpc.Events(zmq.ROUTER)
+    server_events.bind(endpoint)
+    server = zerorpc.ChannelMultiplexer(server_events)
+
+    client_events = zerorpc.Events(zmq.DEALER)
+    client_events.connect(endpoint)
+    client = zerorpc.ChannelMultiplexer(client_events, ignore_broadcast=True)
+
+    client_channel = client.channel()
+    client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=2)
+    client_bufchan = zerorpc.BufferedChannel(client_hbchan, inqueue_size=10)
+
+    event = server.recv()
+    server_channel = server.channel(event)
+    server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=2)
+    server_bufchan = zerorpc.BufferedChannel(server_hbchan, inqueue_size=10)
+
+    seen = []
+
+    def is_stream_done(event):
+        return event.name == 'done'
+
+    def client_do():
+        while True:
+            event = client_bufchan.recv()
+            if event.name == 'done':
+                return
+            seen.append(event.args)
+            gevent.sleep(0.1)
+
+    def server_do():
+        for i in range(0, 10):
+            server_bufchan.emit('blah', (i))
+        server_bufchan.emit('done', ('bye'))
+
+    client_bufchan.on_close_if = is_stream_done
+
+    coro_pool = gevent.pool.Pool()
+    g1 = coro_pool.spawn(client_do)
+    g2 = coro_pool.spawn(server_do)
+
+    g1.get()  # Re-raise any exceptions...
+    g2.get()
+
+    assert seen == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    client_bufchan.close()
+    server_bufchan.close()
+    client.close()
+    server.close()
