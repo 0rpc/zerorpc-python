@@ -32,9 +32,8 @@ import logging
 from .exceptions import TimeoutExpired
 from .channel_base import ChannelBase
 
-from logging import getLogger
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ChannelMultiplexer(ChannelBase):
@@ -123,7 +122,7 @@ class Channel(ChannelBase):
             self._channel_id = from_event.header['message_id']
             self._zmqid = from_event.identity
             self._multiplexer._active_channels[self._channel_id] = self
-            logging.debug('<-- new channel %s', self._channel_id)
+            logger.debug('<-- new channel %s', self._channel_id)
             self._queue.put(from_event)
 
     @property
@@ -137,7 +136,7 @@ class Channel(ChannelBase):
     def close(self):
         if self._channel_id is not None:
             del self._multiplexer._active_channels[self._channel_id]
-            logging.debug('-x- closed channel %s', self._channel_id)
+            logger.debug('-x- closed channel %s', self._channel_id)
             self._channel_id = None
 
     def new_event(self, name, args, xheader=None):
@@ -145,7 +144,7 @@ class Channel(ChannelBase):
         if self._channel_id is None:
             self._channel_id = event.header['message_id']
             self._multiplexer._active_channels[self._channel_id] = self
-            logging.debug('--> new channel %s', self._channel_id)
+            logger.debug('--> new channel %s', self._channel_id)
         else:
             event.header['response_to'] = self._channel_id
         event.identity = self._zmqid
