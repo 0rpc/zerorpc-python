@@ -242,7 +242,10 @@ class BufferedChannel(ChannelBase):
         self._channel.emit('_zpc_more', (open_slots,))
 
     def recv(self, timeout=None):
-        if self._verbose:
+        # self._channel can be set to None by an 'on_close_if' callback if it
+        # sees a suitable message from the remote end...
+        #
+        if self._verbose and self._channel:
             if self._input_queue_reserved < self._input_queue_size / 2:
                 self._request_data()
         else:
