@@ -261,7 +261,7 @@ class Events(ChannelBase):
         try:
             if not self._socket.closed:
                 self.close()
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
 
     def close(self):
