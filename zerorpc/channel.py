@@ -246,7 +246,7 @@ class BufferedChannel(ChannelBase):
         # sees a suitable message from the remote end...
         #
         if self._verbose and self._channel:
-            if self._input_queue_reserved < self._input_queue_size / 2:
+            if self._input_queue_reserved < self._input_queue_size // 2:
                 self._request_data()
         else:
             self._verbose = True

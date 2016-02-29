@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 
-class ReqRep:
+class ReqRep(object):
 
     def process_call(self, context, channel, req_event, functor):
         context.hook_server_before_exec(req_event)
@@ -49,7 +49,7 @@ class ReqRep:
             channel.close()
 
 
-class ReqStream:
+class ReqStream(object):
 
     def process_call(self, context, channel, req_event, functor):
         context.hook_server_before_exec(req_event)

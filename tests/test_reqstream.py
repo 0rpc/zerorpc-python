@@ -23,10 +23,14 @@
 # SOFTWARE.
 
 
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
+
 import gevent
 
 import zerorpc
-from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
+from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_rcp_streaming():
@@ -36,11 +40,11 @@ def test_rcp_streaming():
 
         @zerorpc.rep
         def range(self, max):
-            return range(max)
+            return list(range(max))
 
         @zerorpc.stream
         def xrange(self, max):
-            return xrange(max)
+            return range(max)
 
     srv = MySrv(heartbeat=TIME_FACTOR * 4)
     srv.bind(endpoint)
@@ -55,8 +59,8 @@ def test_rcp_streaming():
     r = client.xrange(10)
     assert getattr(r, 'next', None) is not None
     l = []
-    print 'wait 4s for fun'
+    print('wait 4s for fun')
     gevent.sleep(TIME_FACTOR * 4)
     for x in r:
         l.append(x)
-    assert l == range(10)
+    assert l == list(range(10))

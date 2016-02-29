@@ -23,6 +23,10 @@
 # SOFTWARE.
 
 
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+
 from nose.tools import assert_raises
 import gevent
 import gevent.local
@@ -32,7 +36,7 @@ import sys
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
+from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_resolve_endpoint():
@@ -47,16 +51,16 @@ def test_resolve_endpoint():
     cnt = c.register_middleware({
         'resolve_endpoint': resolve
         })
-    print 'registered_count:', cnt
+    print('registered_count:', cnt)
     assert cnt == 1
 
-    print 'resolve titi:', c.hook_resolve_endpoint('titi')
+    print('resolve titi:', c.hook_resolve_endpoint('titi'))
     assert c.hook_resolve_endpoint('titi') == test_endpoint
 
-    print 'resolve toto:', c.hook_resolve_endpoint('toto')
+    print('resolve toto:', c.hook_resolve_endpoint('toto'))
     assert c.hook_resolve_endpoint('toto') == 'toto'
 
-    class Resolver():
+    class Resolver(object):
 
         def resolve_endpoint(self, endpoint):
             if endpoint == 'toto':
@@ -64,18 +68,18 @@ def test_resolve_endpoint():
             return endpoint
 
     cnt = c.register_middleware(Resolver())
-    print 'registered_count:', cnt
+    print('registered_count:', cnt)
     assert cnt == 1
 
-    print 'resolve titi:', c.hook_resolve_endpoint('titi')
+    print('resolve titi:', c.hook_resolve_endpoint('titi'))
     assert c.hook_resolve_endpoint('titi') == test_endpoint
-    print 'resolve toto:', c.hook_resolve_endpoint('toto')
+    print('resolve toto:', c.hook_resolve_endpoint('toto'))
     assert c.hook_resolve_endpoint('toto') == test_endpoint
 
     c2 = zerorpc.Context()
-    print 'resolve titi:', c2.hook_resolve_endpoint('titi')
+    print('resolve titi:', c2.hook_resolve_endpoint('titi'))
     assert c2.hook_resolve_endpoint('titi') == 'titi'
-    print 'resolve toto:', c2.hook_resolve_endpoint('toto')
+    print('resolve toto:', c2.hook_resolve_endpoint('toto'))
     assert c2.hook_resolve_endpoint('toto') == 'toto'
 
 
@@ -83,7 +87,7 @@ def test_resolve_endpoint_events():
     test_endpoint = random_ipc_endpoint()
     c = zerorpc.Context()
 
-    class Resolver():
+    class Resolver(object):
         def resolve_endpoint(self, endpoint):
             if endpoint == 'some_service':
                 return test_endpoint
@@ -91,7 +95,7 @@ def test_resolve_endpoint_events():
 
     class Srv(zerorpc.Server):
         def hello(self):
-            print 'heee'
+            print('heee')
             return 'world'
 
     srv = Srv(heartbeat=TIME_FACTOR * 1, context=c)
@@ -114,7 +118,7 @@ def test_resolve_endpoint_events():
     srv.close()
 
 
-class Tracer:
+class Tracer(object):
     '''Used by test_task_context_* tests'''
     def __init__(self, identity):
         self._identity = identity
@@ -127,7 +131,7 @@ class Tracer:
 
     def load_task_context(self, event_header):
         self._locals.trace_id = event_header.get('trace_id', None)
-        print self._identity, 'load_task_context', self.trace_id
+        print(self._identity, 'load_task_context', self.trace_id)
         self._log.append(('load', self.trace_id))
 
     def get_task_context(self):
@@ -136,10 +140,10 @@ class Tracer:
             self._locals.trace_id = '<{0}>'.format(hashlib.md5(
                     str(random.random())[3:]
                     ).hexdigest()[0:6].upper())
-            print self._identity, 'get_task_context! [make a new one]', self.trace_id
+            print(self._identity, 'get_task_context! [make a new one]', self.trace_id)
             self._log.append(('new', self.trace_id))
         else:
-            print self._identity, 'get_task_context! [reuse]', self.trace_id
+            print(self._identity, 'get_task_context! [reuse]', self.trace_id)
             self._log.append(('reuse', self.trace_id))
         return { 'trace_id': self.trace_id }
 
@@ -154,7 +158,7 @@ def test_task_context():
     cli_tracer = Tracer('[client]')
     cli_ctx.register_middleware(cli_tracer)
 
-    class Srv:
+    class Srv(object):
         def echo(self, msg):
             return msg
 
@@ -201,7 +205,7 @@ def test_task_context_relay():
     cli_tracer = Tracer('[client]')
     cli_ctx.register_middleware(cli_tracer)
 
-    class Srv:
+    class Srv(object):
         def echo(self, msg):
             return msg
 
@@ -212,7 +216,7 @@ def test_task_context_relay():
     c_relay = zerorpc.Client(context=srv_relay_ctx)
     c_relay.connect(endpoint1)
 
-    class SrvRelay:
+    class SrvRelay(object):
         def echo(self, msg):
             return c_relay.echo('relay' + msg) + 'relayed'
 
@@ -257,7 +261,7 @@ def test_task_context_relay_fork():
     cli_tracer = Tracer('[client]')
     cli_ctx.register_middleware(cli_tracer)
 
-    class Srv:
+    class Srv(object):
         def echo(self, msg):
             return msg
 
@@ -268,15 +272,15 @@ def test_task_context_relay_fork():
     c_relay = zerorpc.Client(context=srv_relay_ctx)
     c_relay.connect(endpoint1)
 
-    class SrvRelay:
+    class SrvRelay(object):
         def echo(self, msg):
             def dothework(msg):
                 return c_relay.echo(msg) + 'relayed'
             g = gevent.spawn(zerorpc.fork_task_context(dothework,
                 srv_relay_ctx), 'relay' + msg)
-            print 'relaying in separate task:', g
+            print('relaying in separate task:', g)
             r = g.get()
-            print 'back to main task'
+            print('back to main task')
             return r
 
     srv_relay = zerorpc.Server(SrvRelay(), context=srv_relay_ctx)
@@ -321,7 +325,7 @@ def test_task_context_pushpull():
 
     trigger = gevent.event.Event()
 
-    class Puller:
+    class Puller(object):
         def echo(self, msg):
             trigger.set()
 
@@ -359,7 +363,7 @@ def test_task_context_pubsub():
 
     trigger = gevent.event.Event()
 
-    class Subscriber:
+    class Subscriber(object):
         def echo(self, msg):
             trigger.set()
 
@@ -381,9 +385,9 @@ def test_task_context_pubsub():
     subscriber.stop()
     subscriber_task.join()
 
-    print publisher_tracer._log
+    print(publisher_tracer._log)
     assert ('new', publisher_tracer.trace_id) in publisher_tracer._log
-    print subscriber_tracer._log
+    print(subscriber_tracer._log)
     assert ('load', publisher_tracer.trace_id) in subscriber_tracer._log
 
 
