@@ -22,10 +22,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import absolute_import
+from builtins import range
+
 import gevent
 import zerorpc
 
-from testutils import random_ipc_endpoint, TIME_FACTOR
+from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 class EchoModule(object):
 
@@ -42,7 +45,7 @@ class EchoModule(object):
     @zerorpc.stream
     def echoes(self, msg):
         self.last_msg = 'echo: ' + msg
-        for i in xrange(0, 3):
+        for i in range(0, 3):
             yield self.last_msg
 
 class ServerBeforeExecMiddleware(object):

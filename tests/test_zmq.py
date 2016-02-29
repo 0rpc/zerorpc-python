@@ -23,10 +23,12 @@
 # SOFTWARE.
 
 
+from __future__ import print_function
+from __future__ import absolute_import
 import gevent
 
 from zerorpc import zmq
-from testutils import random_ipc_endpoint
+from .testutils import teardown, random_ipc_endpoint
 
 
 def test1():
@@ -36,10 +38,10 @@ def test1():
         s = c.socket(zmq.REP)
         s.bind(endpoint)
         while True:
-            print 'srv recving...'
+            print('srv recving...')
             r = s.recv()
-            print 'srv', r
-            print 'srv sending...'
+            print('srv', r)
+            print('srv sending...')
             s.send('world')
 
         s.close()
@@ -50,11 +52,11 @@ def test1():
         s = c.socket(zmq.REQ)
         s.connect(endpoint)
 
-        print 'cli sending...'
+        print('cli sending...')
         s.send('hello')
-        print 'cli recving...'
+        print('cli recving...')
         r = s.recv()
-        print 'cli', r
+        print('cli', r)
 
         s.close()
         c.term()

@@ -23,6 +23,11 @@
 # SOFTWARE.
 
 
+from __future__ import absolute_import
+from builtins import str
+from builtins import zip
+from future.utils import iteritems
+
 import sys
 import traceback
 import gevent.pool
@@ -31,14 +36,14 @@ import gevent.event
 import gevent.local
 import gevent.lock
 
-import gevent_zmq as zmq
+from . import gevent_zmq as zmq
 from .exceptions import TimeoutExpired, RemoteError, LostRemote
 from .channel import ChannelMultiplexer, BufferedChannel
 from .socket import SocketBase
 from .heartbeat import HeartBeatOnChannel
 from .context import Context
 from .decorators import DecoratorBase, rep
-import patterns
+from . import patterns
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -62,7 +67,7 @@ class ServerBase(object):
         self._inject_builtins()
         self._heartbeat_freq = heartbeat
 
-        for (k, functor) in self._methods.items():
+        for (k, functor) in iteritems(self._methods):
             if not isinstance(functor, DecoratorBase):
                 self._methods[k] = rep(functor)
 
@@ -97,11 +102,11 @@ class ServerBase(object):
         return r
 
     def _zerorpc_inspect(self):
-        methods = dict((m, f) for m, f in self._methods.items()
+        methods = dict((m, f) for m, f in iteritems(self._methods)
                     if not m.startswith('_'))
         detailled_methods = dict((m,
             dict(args=self._format_args_spec(f._zerorpc_args()),
-                doc=f._zerorpc_doc())) for (m, f) in methods.items())
+                doc=f._zerorpc_doc())) for (m, f) in iteritems(methods))
         return {'name': self._name,
                 'methods': detailled_methods}
 
