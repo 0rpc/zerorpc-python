@@ -42,6 +42,9 @@ class SocketBase(object):
     def bind(self, endpoint, resolve=True):
         return self._events.bind(endpoint, resolve)
 
+    def disconnect(self, endpoint, resolve=True):
+        return self._events.disconnect(endpoint, resolve)
+
     @property
     def debug(self):
         return self._events.debug
