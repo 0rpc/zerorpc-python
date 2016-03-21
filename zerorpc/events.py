@@ -32,7 +32,7 @@ import gevent.lock
 import logging
 import sys
 
-import gevent_zmq as zmq
+from . import gevent_zmq as zmq
 from .exceptions import TimeoutExpired
 from .context import Context
 from .channel_base import ChannelBase
@@ -56,7 +56,7 @@ class SequentialSender(object):
 
     def _send(self, parts):
         e = None
-        for i in xrange(len(parts) - 1):
+        for i in range(len(parts) - 1):
             try:
                 self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
             except (gevent.GreenletExit, gevent.Timeout) as e:
@@ -120,7 +120,8 @@ class Sender(SequentialSender):
             self._send_task.kill()
 
     def _sender(self):
-        for parts in self._send_queue:
+        while True:
+            parts = self._send_queue.get()
             super(Sender, self)._send(parts)
 
     def __call__(self, parts, timeout=None):
@@ -330,9 +331,9 @@ class Events(ChannelBase):
             logger.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
-            parts.extend(['', event.pack()])
+            parts.extend([b'', event.pack()])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
-            parts = ('', event.pack())
+            parts = (b'', event.pack())
         else:
             parts = (event.pack(),)
         self._send(parts, timeout)

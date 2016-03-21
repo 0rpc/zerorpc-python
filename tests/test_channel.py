@@ -21,11 +21,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import print_function
 
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint
+from .testutils import teardown, random_ipc_endpoint
 
 
 def test_events_channel_client_side():
@@ -42,7 +43,7 @@ def test_events_channel_client_side():
     client_channel.emit('someevent', (42,))
 
     event = server.recv()
-    print event
+    print(event)
     assert list(event.args) == [42]
     assert event.identity is not None
 
@@ -68,16 +69,16 @@ def test_events_channel_client_side_server_send_many():
     client_channel.emit('giveme', (10,))
 
     event = server.recv()
-    print event
+    print(event)
     assert list(event.args) == [10]
     assert event.identity is not None
 
-    for x in xrange(10):
+    for x in range(10):
         reply_event = server.new_event('someanswer', (x,),
                 xheader=dict(response_to=event.header['message_id']))
         reply_event.identity = event.identity
         server.emit_event(reply_event)
-    for x in xrange(10):
+    for x in range(10):
         event = client_channel.recv()
         assert list(event.args) == [x]
 
@@ -96,7 +97,7 @@ def test_events_channel_both_side():
     client_channel.emit('openthat', (42,))
 
     event = server.recv()
-    print event
+    print(event)
     assert list(event.args) == [42]
     assert event.name == 'openthat'
 

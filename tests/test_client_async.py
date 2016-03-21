@@ -21,7 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from __future__ import print_function
 
 from nose.tools import assert_raises
 import gevent
@@ -29,7 +29,7 @@ import sys
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
+from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_client_server_client_timeout_with_async():
@@ -55,11 +55,11 @@ def test_client_server_client_timeout_with_async():
 
     if sys.version_info < (2, 7):
         def _do_with_assert_raises():
-            print async_result.get()
+            print(async_result.get())
         assert_raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
     else:
         with assert_raises(zerorpc.TimeoutExpired):
-            print async_result.get()
+            print(async_result.get())
     client.close()
     srv.close()
 
