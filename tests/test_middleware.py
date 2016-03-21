@@ -26,6 +26,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from builtins import str
+from future.utils import tobytes
 
 from nose.tools import assert_raises
 import gevent
@@ -138,7 +139,7 @@ class Tracer(object):
         if self.trace_id is None:
             # just an ugly code to generate a beautiful little hash.
             self._locals.trace_id = '<{0}>'.format(hashlib.md5(
-                    str(random.random())[3:]
+                    tobytes(str(random.random())[3:])
                     ).hexdigest()[0:6].upper())
             print(self._identity, 'get_task_context! [make a new one]', self.trace_id)
             self._log.append(('new', self.trace_id))

@@ -49,6 +49,10 @@ else:
     def get_pyzmq_frame_buffer(frame):
         return frame.buffer
 
+# gevent <= 1.1.0.rc5 is missing the Python3 __next__ method.
+if sys.version_info >= (3, 0) and gevent.version_info <= (1, 1, 0, 'rc', '5'):
+    setattr(gevent.queue.Channel, '__next__', gevent.queue.Channel.next)
+
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +170,7 @@ class Event(object):
         self._name = name
         self._args = args
         if header is None:
-            self._header = {'message_id': context.new_msgid(), 'v': 3}
+            self._header = {b'message_id': context.new_msgid(), b'v': 3}
         else:
             self._header = header
         self._identity = None
@@ -334,9 +338,9 @@ class Events(ChannelBase):
             logger.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
-            parts.extend(['', event.pack()])
+            parts.extend([b'', event.pack()])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
-            parts = ('', event.pack())
+            parts = (b'', event.pack())
         else:
             parts = (event.pack(),)
         self._send(parts, timeout)

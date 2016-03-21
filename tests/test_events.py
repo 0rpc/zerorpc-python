@@ -23,11 +23,9 @@
 # SOFTWARE.
 
 
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
-from builtins import object
+from __future__ import print_function, absolute_import
+from builtins import str, bytes
+from builtins import range, object
 
 from zerorpc import zmq
 import zerorpc
@@ -52,25 +50,25 @@ def test_event():
     event = zerorpc.Event('mylittleevent', (None,), context=context)
     print(event)
     assert event.name == 'mylittleevent'
-    assert event.header['message_id'] == 0
+    assert event.header[b'message_id'] == 0
     assert event.args == (None,)
 
     event = zerorpc.Event('mylittleevent2', ('42',), context=context)
     print(event)
     assert event.name == 'mylittleevent2'
-    assert event.header['message_id'] == 1
+    assert event.header[b'message_id'] == 1
     assert event.args == ('42',)
 
     event = zerorpc.Event('mylittleevent3', ('a', 42), context=context)
     print(event)
     assert event.name == 'mylittleevent3'
-    assert event.header['message_id'] == 2
+    assert event.header[b'message_id'] == 2
     assert event.args == ('a', 42)
 
     event = zerorpc.Event('mylittleevent4', ('b', 21), context=context)
     print(event)
     assert event.name == 'mylittleevent4'
-    assert event.header['message_id'] == 3
+    assert event.header[b'message_id'] == 3
     assert event.args == ('b', 21)
 
     packed = event.pack()
@@ -78,23 +76,23 @@ def test_event():
     print(unpacked)
 
     assert unpacked.name == 'mylittleevent4'
-    assert unpacked.header['message_id'] == 3
+    assert unpacked.header[b'message_id'] == 3
     assert list(unpacked.args) == ['b', 21]
 
     event = zerorpc.Event('mylittleevent5', ('c', 24, True),
-            header={'lol': 'rofl'}, context=None)
+            header={b'lol': 'rofl'}, context=None)
     print(event)
     assert event.name == 'mylittleevent5'
-    assert event.header['lol'] == 'rofl'
+    assert event.header[b'lol'] == 'rofl'
     assert event.args == ('c', 24, True)
 
     event = zerorpc.Event('mod', (42,), context=context)
     print(event)
     assert event.name == 'mod'
-    assert event.header['message_id'] == 4
+    assert event.header[b'message_id'] == 4
     assert event.args == (42,)
-    event.header.update({'stream': True})
-    assert event.header['stream'] is True
+    event.header.update({b'stream': True})
+    assert event.header[b'stream'] is True
 
 
 def test_events_req_rep():
@@ -179,55 +177,55 @@ def test_events_push_pull():
 
 def test_msgpack():
     context = zerorpc.Context()
-    event = zerorpc.Event('myevent', ('a',), context=context)
+    event = zerorpc.Event(u'myevent', (u'a',), context=context)
     print(event)
-    assert type(event.name) == str
+    assert isinstance(event.name, str)
     for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
+        assert isinstance(key, bytes)
+    assert isinstance(event.header[b'message_id'], bytes)
+    assert isinstance(event.args[0], str)
 
     packed = event.pack()
     event = event.unpack(packed)
     print(event)
-    assert type(event.name) == str
+    assert isinstance(event.name, str)
     for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
+        assert isinstance(key, bytes)
+    assert isinstance(event.header[b'message_id'], bytes)
+    assert isinstance(event.args[0], str)
 
-    event = zerorpc.Event('myevent', (u'a',), context=context)
+    event = zerorpc.Event(b'myevent', (u'a',), context=context)
     print(event)
-    assert type(event.name) == str
+    assert isinstance(event.name, bytes)
     for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
-
-    packed = event.pack()
-    event = event.unpack(packed)
-    print(event)
-    assert type(event.name) == str
-    for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
-
-    event = zerorpc.Event('myevent', (u'a', 'b'), context=context)
-    print(event)
-    assert type(event.name) == str
-    for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
-    assert type(event.args[1]) == str
+        assert isinstance(key, bytes)
+    assert isinstance(event.header[b'message_id'], bytes)
+    assert isinstance(event.args[0], str)
 
     packed = event.pack()
     event = event.unpack(packed)
     print(event)
-    assert type(event.name) == str
+    assert isinstance(event.name, bytes)
     for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
-    assert type(event.args[1]) == str
+        assert isinstance(key, bytes)
+    assert isinstance(event.header[b'message_id'], bytes)
+    assert isinstance(event.args[0], str)
+
+    event = zerorpc.Event(u'myevent', (u'a', u'b'), context=context)
+    print(event)
+    assert isinstance(event.name, str)
+    for key in event.header.keys():
+        assert isinstance(key, bytes)
+    assert isinstance(event.header[b'message_id'], bytes)
+    assert isinstance(event.args[0], str)
+    assert isinstance(event.args[1], str)
+
+    packed = event.pack()
+    event = event.unpack(packed)
+    print(event)
+    assert isinstance(event.name, str)
+    for key in event.header.keys():
+        assert isinstance(key, bytes)
+    assert isinstance(event.header[b'message_id'], bytes)
+    assert isinstance(event.args[0], str)
+    assert isinstance(event.args[1], str)
