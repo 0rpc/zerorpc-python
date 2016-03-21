@@ -3,14 +3,12 @@ python:
   - 2.6
   - 2.7
   - 3.4
+  - 3.5
 env:
   matrix:
-    - PYZMQ='pyzmq>=14'
-    - PYZMQ='pyzmq>=14.3'
-    - PYZMQ='pyzmq>=14.2,<14.3'
-    - PYZMQ='pyzmq>=14.1,<14.2'
-    - PYZMQ='pyzmq>=14.0,<14.1'
-    - PYZMQ='pyzmq<14'
+    - PYZMQ='pyzmq>=15'
+    - PYZMQ='pyzmq>=14,<15'
+    - PYZMQ='pyzmq>=13,<14'
 matrix:
   fast_finish: true
 script:
