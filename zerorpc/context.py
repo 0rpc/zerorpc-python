@@ -24,7 +24,7 @@
 
 
 from __future__ import absolute_import
-from builtins import str
+from future.utils import tobytes
 
 import uuid
 import random
@@ -103,7 +103,7 @@ class Context(zmq.Context):
         return Context._instance
 
     def _reset_msgid(self):
-        self._msg_id_base = str(uuid.uuid4())[8:]
+        self._msg_id_base = tobytes(uuid.uuid4().hex)[8:]
         self._msg_id_counter = random.randrange(0, 2 ** 32)
         self._msg_id_counter_stop = random.randrange(self._msg_id_counter, 2 ** 32)
 
@@ -112,7 +112,7 @@ class Context(zmq.Context):
             self._reset_msgid()
         else:
             self._msg_id_counter = (self._msg_id_counter + 1)
-        return '{0:08x}{1}'.format(self._msg_id_counter, self._msg_id_base)
+        return tobytes('{0:08x}'.format(self._msg_id_counter)) + self._msg_id_base
 
     def register_middleware(self, middleware_instance):
         registered_count = 0

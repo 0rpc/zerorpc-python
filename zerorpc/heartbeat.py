@@ -91,7 +91,7 @@ class HeartBeatOnChannel(ChannelBase):
         while True:
             event = self._channel.recv()
             if self._compat_v2 is None:
-                self._compat_v2 = event.header.get('v', 0) < 3
+                self._compat_v2 = event.header.get(b'v', 0) < 3
             if event.name == '_zpc_hb':
                 self._remote_last_hb = time.time()
                 self._start_heartbeat()

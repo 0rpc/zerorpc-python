@@ -51,7 +51,7 @@ def test_events_channel_client_side():
     assert event.identity is not None
 
     reply_event = server.new_event('someanswer', (21,),
-            xheader=dict(response_to=event.header['message_id']))
+            xheader={b'response_to': event.header[b'message_id']})
     reply_event.identity = event.identity
     server.emit_event(reply_event)
     event = client_channel.recv()
@@ -78,7 +78,7 @@ def test_events_channel_client_side_server_send_many():
 
     for x in range(10):
         reply_event = server.new_event('someanswer', (x,),
-                xheader=dict(response_to=event.header['message_id']))
+                xheader={b'response_to': event.header[b'message_id']})
         reply_event.identity = event.identity
         server.emit_event(reply_event)
     for x in range(10):

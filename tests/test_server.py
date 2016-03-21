@@ -209,7 +209,7 @@ def test_exception_compat_v1():
     assert msg == 'donotexist'
 
     rpccall = client.channel()
-    rpccall.emit('donotexist', tuple(), xheader=dict(v=1))
+    rpccall.emit('donotexist', tuple(), xheader={b'v': 1})
     event = rpccall.recv()
     print(event)
     assert event.name == 'ERR'

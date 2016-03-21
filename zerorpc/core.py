@@ -138,7 +138,7 @@ class ServerBase(object):
         return (name, human_msg, human_traceback)
 
     def _async_task(self, initial_event):
-        protocol_v1 = initial_event.header.get('v', 1) < 2
+        protocol_v1 = initial_event.header.get(b'v', 1) < 2
         channel = self._multiplexer.channel(initial_event)
         hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
                 passive=protocol_v1)
@@ -201,7 +201,7 @@ class ClientBase(object):
     def _handle_remote_error(self, event):
         exception = self._context.hook_client_handle_remote_error(event)
         if not exception:
-            if event.header.get('v', 1) >= 2:
+            if event.header.get(b'v', 1) >= 2:
                 (name, msg, traceback) = event.args
                 exception = RemoteError(name, msg, traceback)
             else:
@@ -370,7 +370,7 @@ class Subscriber(Puller):
     def __init__(self, methods=None, context=None):
         super(Subscriber, self).__init__(methods=methods, context=context,
                 zmq_socket=zmq.SUB)
-        self._events.setsockopt(zmq.SUBSCRIBE, '')
+        self._events.setsockopt(zmq.SUBSCRIBE, b'')
 
 
 def fork_task_context(functor, context=None):
