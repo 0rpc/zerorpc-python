@@ -1,7 +1,7 @@
 zerorpc
 =======
 
-.. image:: https://secure.travis-ci.org/0rpc/zerorpc-python.png
+.. image:: https://secure.travis-ci.org/0rpc/zerorpc-python.png?branch=master
    :target: http://travis-ci.org/0rpc/zerorpc-python
 
 Mailing list: zerorpc@googlegroups.com (https://groups.google.com/d/forum/zerorpc)
