@@ -222,7 +222,7 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
         if not isinstance(remote_methods, dict):
             (longest_name_len,
                 detailled_methods) = zerorpc_inspect_python_argspecs(
-                    remote_methods, method, long_doc, include_argspec)
+                remote_methods, method, long_doc, include_argspec)
 
         (longest_name_len, detailled_methods) = zerorpc_inspect_generic(
             remote_methods, method, long_doc, include_argspec)
