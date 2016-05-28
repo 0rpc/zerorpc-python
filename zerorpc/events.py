@@ -275,11 +275,11 @@ class Events(ChannelBase):
     def close(self):
         try:
             self._send.close()
-        except AttributeError:
+        except (AttributeError, TypeError, gevent.GreenletExit):
             pass
         try:
             self._recv.close()
-        except AttributeError:
+        except (AttributeError, TypeError, gevent.GreenletExit):
             pass
         self._socket.close()
 
