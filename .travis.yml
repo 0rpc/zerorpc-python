@@ -13,7 +13,7 @@ matrix:
   fast_finish: true
 script:
   - flake8 --ignore=E501,E128 zerorpc bin
-  - ZPC_TEST_TIME_FACTOR=0.2 nosetests -v
+  - nosetests -v
 sudo: false
 addons:
   apt:
