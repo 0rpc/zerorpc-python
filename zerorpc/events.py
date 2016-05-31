@@ -316,7 +316,7 @@ class Events(ChannelBase):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.disconnect(endpoint_))
-            logging.debug('disconnected from %s (status=%s)', endpoint_, r[-1])
+            logger.debug('disconnected from %s (status=%s)', endpoint_, r[-1])
         return r
 
     def new_event(self, name, args, xheader=None):
