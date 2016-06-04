@@ -176,7 +176,10 @@ class Event(object):
         if header is None:
             self._header = {u'message_id': context.new_msgid(), u'v': 3}
         else:
-            self._header = header
+            if isinstance(next(iter(header)), str):
+                self._header = {k.encode(): v for k, v in header.items()}
+            else:
+                self._header = header
         self._identity = None
 
     @property
