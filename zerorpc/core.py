@@ -138,7 +138,7 @@ class ServerBase(object):
         return (name, human_msg, human_traceback)
 
     def _async_task(self, initial_event):
-        protocol_v1 = initial_event.header.get(b'v', 1) < 2
+        protocol_v1 = initial_event.header.get(u'v', 1) < 2
         channel = self._multiplexer.channel(initial_event)
         hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
                 passive=protocol_v1)
@@ -157,7 +157,7 @@ class ServerBase(object):
         except Exception:
             exc_infos = list(sys.exc_info())
             human_exc_infos = self._print_traceback(protocol_v1, exc_infos)
-            reply_event = bufchan.new_event('ERR', human_exc_infos,
+            reply_event = bufchan.new_event(u'ERR', human_exc_infos,
                     self._context.hook_get_task_context())
             self._context.hook_server_inspect_exception(event, reply_event, exc_infos)
             bufchan.emit_event(reply_event)
@@ -201,7 +201,7 @@ class ClientBase(object):
     def _handle_remote_error(self, event):
         exception = self._context.hook_client_handle_remote_error(event)
         if not exception:
-            if event.header.get(b'v', 1) >= 2:
+            if event.header.get(u'v', 1) >= 2:
                 (name, msg, traceback) = event.args
                 exception = RemoteError(name, msg, traceback)
             else:
@@ -238,6 +238,23 @@ class ClientBase(object):
                 reply_event, self._handle_remote_error)
 
     def __call__(self, method, *args, **kargs):
+        # here `method` is either a string of bytes or an unicode string in
+        # Python2 and Python3. Python2: str aka a byte string containing ASCII
+        # (unless the user explicitly provide an unicode string). Python3: str
+        # aka an unicode string (unless the user explicitly provide a byte
+        # string).
+        # zerorpc protocol requires an utf-8 encoded string at the msgpack
+        # level. msgpack will encode any unicode string object to UTF-8 and tag
+        # it `string`, while a bytes string will be tagged `bin`.
+        #
+        # So when we get a bytes string, we assume it to be an UTF-8 string
+        # (ASCII is contained in UTF-8) that we decode to an unicode string.
+        # Right after, msgpack-python will re-encode it as UTF-8. Yes this is
+        # terribly inefficient with Python2 because most of the time `method`
+        # will already be an UTF-8 encoded bytes string.
+        if isinstance(method, bytes):
+            method = method.decode('utf-8')
+
         timeout = kargs.get('timeout', self._timeout)
         channel = self._multiplexer.channel()
         hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
