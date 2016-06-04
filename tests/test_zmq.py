@@ -38,7 +38,7 @@ def test1():
         s = c.socket(zmq.REP)
         s.bind(endpoint)
         while True:
-            print('srv recving...')
+            print(b'srv recving...')
             r = s.recv()
             print('srv', r)
             print('srv sending...')

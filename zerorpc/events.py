@@ -166,11 +166,15 @@ class Event(object):
 
     __slots__ = ['_name', '_args', '_header', '_identity']
 
+    # protocol details:
+    #  - `name` and `header` keys must be unicode strings.
+    #  - `message_id` and 'response_to' values are opaque bytes string.
+    #  - `v' value is an integer.
     def __init__(self, name, args, context, header=None):
         self._name = name
         self._args = args
         if header is None:
-            self._header = {b'message_id': context.new_msgid(), b'v': 3}
+            self._header = {u'message_id': context.new_msgid(), u'v': 3}
         else:
             self._header = header
         self._identity = None
@@ -200,7 +204,9 @@ class Event(object):
         self._identity = v
 
     def pack(self):
-        return msgpack.Packer(use_bin_type=True).pack((self._header, self._name, self._args))
+        payload = (self._header, self._name, self._args)
+        r = msgpack.Packer(use_bin_type=True).pack(payload)
+        return r
 
     @staticmethod
     def unpack(blob):

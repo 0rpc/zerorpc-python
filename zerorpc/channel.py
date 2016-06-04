@@ -79,7 +79,7 @@ class ChannelMultiplexer(ChannelBase):
             except Exception:
                 logger.exception('zerorpc.ChannelMultiplexer ignoring error on recv')
                 continue
-            channel_id = event.header.get(b'response_to', None)
+            channel_id = event.header.get(u'response_to', None)
 
             queue = None
             if channel_id is not None:
@@ -119,7 +119,7 @@ class Channel(ChannelBase):
         self._zmqid = None
         self._queue = gevent.queue.Queue(maxsize=1)
         if from_event is not None:
-            self._channel_id = from_event.header[b'message_id']
+            self._channel_id = from_event.header[u'message_id']
             self._zmqid = from_event.identity
             self._multiplexer._active_channels[self._channel_id] = self
             logger.debug('<-- new channel %s', self._channel_id)
@@ -142,11 +142,11 @@ class Channel(ChannelBase):
     def new_event(self, name, args, xheader=None):
         event = self._multiplexer.new_event(name, args, xheader)
         if self._channel_id is None:
-            self._channel_id = event.header[b'message_id']
+            self._channel_id = event.header[u'message_id']
             self._multiplexer._active_channels[self._channel_id] = self
             logger.debug('--> new channel %s', self._channel_id)
         else:
-            event.header[b'response_to'] = self._channel_id
+            event.header[u'response_to'] = self._channel_id
         event.identity = self._zmqid
         return event
 
@@ -205,7 +205,7 @@ class BufferedChannel(ChannelBase):
     def _recver(self):
         while True:
             event = self._channel.recv()
-            if event.name == '_zpc_more':
+            if event.name == u'_zpc_more':
                 try:
                     self._remote_queue_open_slots += int(event.args[0])
                 except Exception:
@@ -239,7 +239,7 @@ class BufferedChannel(ChannelBase):
     def _request_data(self):
         open_slots = self._input_queue_size - self._input_queue_reserved
         self._input_queue_reserved += open_slots
-        self._channel.emit('_zpc_more', (open_slots,))
+        self._channel.emit(u'_zpc_more', (open_slots,))
 
     def recv(self, timeout=None):
         # self._channel can be set to None by an 'on_close_if' callback if it
