@@ -27,6 +27,9 @@
 # We want to act like zmq
 from zmq import *  # noqa
 
+# Explicit import avoids overuse of "noqa"
+from zmq import ZMQError
+
 # A way to access original zmq
 import zmq as _zmq
 

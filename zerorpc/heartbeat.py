@@ -30,7 +30,7 @@ import gevent.event
 import gevent.local
 import gevent.lock
 
-from .exceptions import *  # noqa
+from .exceptions import LostRemote, TimeoutExpired
 from .channel_base import ChannelBase
 
 

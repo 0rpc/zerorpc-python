@@ -24,7 +24,7 @@
 
 import inspect
 
-from .patterns import *  # noqa
+from .patterns import ReqRep, ReqStream
 
 
 class DecoratorBase(object):
