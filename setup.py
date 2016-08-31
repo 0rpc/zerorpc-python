@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 # execfile() doesn't exist in Python 3, this way we are compatible with both.
-exec(compile(open('zerorpc/version.py').read(), 'zerorpc/version.py', 'exec'))
+exec(compile(open('zerorpc/version.py', encoding='utf8').read(), 'zerorpc/version.py', 'exec'))
 
 import sys
 
