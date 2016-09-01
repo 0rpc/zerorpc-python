@@ -22,12 +22,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from past.builtins import execfile
-
-execfile('zerorpc/version.py')
-
 import sys
 
+if sys.version_info < (3, 0):
+    execfile('zerorpc/version.py')
+else:
+    exec(compile(open('zerorpc/version.py', encoding='utf8').read(), 'zerorpc/version.py', 'exec'))
 
 try:
     from setuptools import setup
