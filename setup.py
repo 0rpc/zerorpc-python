@@ -22,10 +22,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from io import open
+from past.builtins import execfile
 
-# execfile() doesn't exist in Python 3, this way we are compatible with both.
-exec(compile(open('zerorpc/version.py', encoding='utf8').read(), 'zerorpc/version.py', 'exec'))
+execfile('zerorpc/version.py')
 
 import sys
 
