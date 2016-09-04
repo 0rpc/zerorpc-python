@@ -27,6 +27,9 @@
 # We want to act like zmq
 from zmq import *  # noqa
 
+# Explicit import to please flake8
+from zmq import ZMQError
+
 # A way to access original zmq
 import zmq as _zmq
 
