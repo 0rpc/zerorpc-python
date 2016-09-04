@@ -22,11 +22,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# execfile() doesn't exist in Python 3, this way we are compatible with both.
-exec(compile(open('zerorpc/version.py').read(), 'zerorpc/version.py', 'exec'))
-
 import sys
 
+if sys.version_info < (3, 0):
+    execfile('zerorpc/version.py')
+else:
+    exec(compile(open('zerorpc/version.py', encoding='utf8').read(), 'zerorpc/version.py', 'exec'))
 
 try:
     from setuptools import setup
