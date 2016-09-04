@@ -23,10 +23,11 @@
 # SOFTWARE.
 
 
+from __future__ import absolute_import
 import gevent
 
 import zerorpc
-from testutils import teardown, random_ipc_endpoint
+from .testutils import teardown, random_ipc_endpoint
 
 def test_client_connect():
     endpoint = random_ipc_endpoint()

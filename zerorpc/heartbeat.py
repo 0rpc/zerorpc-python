@@ -30,7 +30,7 @@ import gevent.event
 import gevent.local
 import gevent.lock
 
-from .exceptions import *  # noqa
+from .exceptions import LostRemote, TimeoutExpired
 from .channel_base import ChannelBase
 
 
@@ -81,7 +81,7 @@ class HeartBeatOnChannel(ChannelBase):
                     gevent.kill(self._parent_coroutine,
                             self._lost_remote_exception())
                 break
-            self._channel.emit('_zpc_hb', (0,))  # 0 -> compat with protocol v2
+            self._channel.emit(u'_zpc_hb', (0,))  # 0 -> compat with protocol v2
 
     def _start_heartbeat(self):
         if self._heartbeat_task is None and self._heartbeat_freq is not None and not self._closed:
@@ -91,12 +91,12 @@ class HeartBeatOnChannel(ChannelBase):
         while True:
             event = self._channel.recv()
             if self._compat_v2 is None:
-                self._compat_v2 = event.header.get('v', 0) < 3
-            if event.name == '_zpc_hb':
+                self._compat_v2 = event.header.get(u'v', 0) < 3
+            if event.name == u'_zpc_hb':
                 self._remote_last_hb = time.time()
                 self._start_heartbeat()
                 if self._compat_v2:
-                    event.name = '_zpc_more'
+                    event.name = u'_zpc_more'
                     self._input_queue.put(event)
             else:
                 self._input_queue.put(event)
@@ -106,8 +106,8 @@ class HeartBeatOnChannel(ChannelBase):
             self._heartbeat_freq * 2))
 
     def new_event(self, name, args, header=None):
-        if self._compat_v2 and name == '_zpc_more':
-            name = '_zpc_hb'
+        if self._compat_v2 and name == u'_zpc_more':
+            name = u'_zpc_hb'
         return self._channel.new_event(name, args, header)
 
     def emit_event(self, event, timeout=None):
