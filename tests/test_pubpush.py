@@ -23,11 +23,15 @@
 # SOFTWARE.
 
 
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
+
 import gevent
 import gevent.event
 import zerorpc
 
-from testutils import teardown, random_ipc_endpoint
+from .testutils import teardown, random_ipc_endpoint
 
 
 def test_pushpull_inheritance():
@@ -39,7 +43,7 @@ def test_pushpull_inheritance():
 
     class Puller(zerorpc.Puller):
         def lolita(self, a, b):
-            print 'lolita', a, b
+            print('lolita', a, b)
             assert a + b == 3
             trigger.set()
 
@@ -50,7 +54,7 @@ def test_pushpull_inheritance():
     trigger.clear()
     pusher.lolita(1, 2)
     trigger.wait()
-    print 'done'
+    print('done')
 
 
 def test_pubsub_inheritance():
@@ -62,7 +66,7 @@ def test_pubsub_inheritance():
 
     class Subscriber(zerorpc.Subscriber):
         def lolita(self, a, b):
-            print 'lolita', a, b
+            print('lolita', a, b)
             assert a + b == 3
             trigger.set()
 
@@ -73,10 +77,10 @@ def test_pubsub_inheritance():
     trigger.clear()
     # We need this retry logic to wait that the subscriber.run coroutine starts
     # reading (the published messages will go to /dev/null until then).
-    for attempt in xrange(0, 10):
+    for attempt in range(0, 10):
         publisher.lolita(1, 2)
         if trigger.wait(0.2):
-            print 'done'
+            print('done')
             return
 
     raise RuntimeError("The subscriber didn't receive any published message")
@@ -87,7 +91,7 @@ def test_pushpull_composite():
 
     class Puller(object):
         def lolita(self, a, b):
-            print 'lolita', a, b
+            print('lolita', a, b)
             assert a + b == 3
             trigger.set()
 
@@ -102,7 +106,7 @@ def test_pushpull_composite():
     trigger.clear()
     pusher.lolita(1, 2)
     trigger.wait()
-    print 'done'
+    print('done')
 
 
 def test_pubsub_composite():
@@ -111,7 +115,7 @@ def test_pubsub_composite():
 
     class Subscriber(object):
         def lolita(self, a, b):
-            print 'lolita', a, b
+            print('lolita', a, b)
             assert a + b == 3
             trigger.set()
 
@@ -126,10 +130,10 @@ def test_pubsub_composite():
     trigger.clear()
     # We need this retry logic to wait that the subscriber.run coroutine starts
     # reading (the published messages will go to /dev/null until then).
-    for attempt in xrange(0, 10):
+    for attempt in range(0, 10):
         publisher.lolita(1, 2)
         if trigger.wait(0.2):
-            print 'done'
+            print('done')
             return
 
     raise RuntimeError("The subscriber didn't receive any published message")

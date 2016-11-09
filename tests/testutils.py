@@ -22,6 +22,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import print_function
+from builtins import str
+
 import functools
 import nose.exc
 import random
@@ -38,7 +41,7 @@ def random_ipc_endpoint():
 def teardown():
     global _tmpfiles
     for tmpfile in _tmpfiles:
-        print 'unlink', tmpfile
+        print('unlink', tmpfile)
         try:
             os.unlink(tmpfile)
         except Exception:
@@ -55,6 +58,6 @@ def skip(reason):
 
 try:
     TIME_FACTOR = float(os.environ.get('ZPC_TEST_TIME_FACTOR'))
-    print 'ZPC_TEST_TIME_FACTOR:', TIME_FACTOR
 except TypeError:
     TIME_FACTOR = 0.2
+print('ZPC_TEST_TIME_FACTOR:', TIME_FACTOR)

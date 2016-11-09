@@ -23,13 +23,17 @@
 # SOFTWARE.
 
 
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
+
 from nose.tools import assert_raises
 import gevent
 import sys
 
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
+from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_server_manual():
@@ -83,10 +87,10 @@ def test_client_server():
     client = zerorpc.Client()
     client.connect(endpoint)
 
-    print client.lolita()
+    print(client.lolita())
     assert client.lolita() == 42
 
-    print client.add(1, 4)
+    print(client.add(1, 4))
     assert client.add(1, 4) == 5
 
 
@@ -113,7 +117,7 @@ def test_client_server_client_timeout():
         assert_raises(zerorpc.TimeoutExpired, client.add, 1, 4)
     else:
         with assert_raises(zerorpc.TimeoutExpired):
-            print client.add(1, 4)
+            print(client.add(1, 4))
     client.close()
     srv.close()
 
@@ -135,12 +139,12 @@ def test_client_server_exception():
 
     if sys.version_info < (2, 7):
         def _do_with_assert_raises():
-            print client.raise_something(42)
+            print(client.raise_something(42))
         assert_raises(zerorpc.RemoteError, _do_with_assert_raises)
     else:
         with assert_raises(zerorpc.RemoteError):
-            print client.raise_something(42)
-    assert client.raise_something(range(5)) == 4
+            print(client.raise_something(42))
+    assert client.raise_something(list(range(5))) == 4
     client.close()
     srv.close()
 
@@ -162,17 +166,17 @@ def test_client_server_detailed_exception():
 
     if sys.version_info < (2, 7):
         def _do_with_assert_raises():
-            print client.raise_error()
+            print(client.raise_error())
         assert_raises(zerorpc.RemoteError, _do_with_assert_raises)
     else:
         with assert_raises(zerorpc.RemoteError):
-            print client.raise_error()
+            print(client.raise_error())
     try:
         client.raise_error()
     except zerorpc.RemoteError as e:
-        print 'got that:', e
-        print 'name', e.name
-        print 'msg', e.msg
+        print('got that:', e)
+        print('name', e.name)
+        print('msg', e.msg)
         assert e.name == 'RuntimeError'
         assert e.msg == 'oops!'
 
@@ -197,20 +201,20 @@ def test_exception_compat_v1():
     rpccall = client.channel()
     rpccall.emit('donotexist', tuple())
     event = rpccall.recv()
-    print event
+    print(event)
     assert event.name == 'ERR'
     (name, msg, tb) = event.args
-    print 'detailed error', name, msg, tb
+    print('detailed error', name, msg, tb)
     assert name == 'NameError'
     assert msg == 'donotexist'
 
     rpccall = client.channel()
-    rpccall.emit('donotexist', tuple(), xheader=dict(v=1))
+    rpccall.emit('donotexist', tuple(), xheader={'v': 1})
     event = rpccall.recv()
-    print event
+    print(event)
     assert event.name == 'ERR'
     (msg,) = event.args
-    print 'msg only', msg
+    print('msg only', msg)
     assert msg == "NameError('donotexist',)"
 
     client_events.close()

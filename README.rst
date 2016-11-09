@@ -16,6 +16,14 @@ with a convenient script, "zerorpc", allowing to:
 * expose Python modules without modifying a single line of code,
 * call those modules remotely through the command line.
 
+Installation
+------------
+
+On most systems, its a matter of::
+
+  $ pip install zerorpc
+
+Depending of the support from Gevent and PyZMQ on your system, you might need to install `libev` (for gevent) and `libzmq` (for pyzmq) with the development files.
 
 Create a server with a one-liner
 --------------------------------

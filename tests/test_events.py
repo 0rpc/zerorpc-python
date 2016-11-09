@@ -23,11 +23,15 @@
 # SOFTWARE.
 
 
+from __future__ import print_function, absolute_import
+from builtins import str, bytes
+from builtins import range, object
+
 from zerorpc import zmq
 import zerorpc
-from testutils import teardown, random_ipc_endpoint
+from .testutils import teardown, random_ipc_endpoint
 
-class MokupContext():
+class MokupContext(object):
     _next_id = 0
 
     def new_msgid(self):
@@ -44,46 +48,46 @@ def test_context():
 def test_event():
     context = MokupContext()
     event = zerorpc.Event('mylittleevent', (None,), context=context)
-    print event
+    print(event)
     assert event.name == 'mylittleevent'
     assert event.header['message_id'] == 0
     assert event.args == (None,)
 
     event = zerorpc.Event('mylittleevent2', ('42',), context=context)
-    print event
+    print(event)
     assert event.name == 'mylittleevent2'
     assert event.header['message_id'] == 1
     assert event.args == ('42',)
 
     event = zerorpc.Event('mylittleevent3', ('a', 42), context=context)
-    print event
+    print(event)
     assert event.name == 'mylittleevent3'
     assert event.header['message_id'] == 2
     assert event.args == ('a', 42)
 
-    event = zerorpc.Event('mylittleevent4', ('b', 21), context=context)
-    print event
+    event = zerorpc.Event('mylittleevent4', ('', 21), context=context)
+    print(event)
     assert event.name == 'mylittleevent4'
     assert event.header['message_id'] == 3
-    assert event.args == ('b', 21)
+    assert event.args == ('', 21)
 
     packed = event.pack()
     unpacked = zerorpc.Event.unpack(packed)
-    print unpacked
+    print(unpacked)
 
     assert unpacked.name == 'mylittleevent4'
     assert unpacked.header['message_id'] == 3
-    assert list(unpacked.args) == ['b', 21]
+    assert list(unpacked.args) == ['', 21]
 
     event = zerorpc.Event('mylittleevent5', ('c', 24, True),
             header={'lol': 'rofl'}, context=None)
-    print event
+    print(event)
     assert event.name == 'mylittleevent5'
     assert event.header['lol'] == 'rofl'
     assert event.args == ('c', 24, True)
 
     event = zerorpc.Event('mod', (42,), context=context)
-    print event
+    print(event)
     assert event.name == 'mod'
     assert event.header['message_id'] == 4
     assert event.args == (42,)
@@ -102,7 +106,7 @@ def test_events_req_rep():
     client.emit('myevent', ('arg1',))
 
     event = server.recv()
-    print event
+    print(event)
     assert event.name == 'myevent'
     assert list(event.args) == ['arg1']
 
@@ -115,16 +119,16 @@ def test_events_req_rep2():
     client = zerorpc.Events(zmq.REQ)
     client.connect(endpoint)
 
-    for i in xrange(10):
+    for i in range(10):
         client.emit('myevent' + str(i), (i,))
         event = server.recv()
-        print event
+        print(event)
         assert event.name == 'myevent' + str(i)
         assert list(event.args) == [i]
 
         server.emit('answser' + str(i * 2), (i * 2,))
         event = client.recv()
-        print event
+        print(event)
         assert event.name == 'answser' + str(i * 2)
         assert list(event.args) == [i * 2]
 
@@ -137,10 +141,10 @@ def test_events_dealer_router():
     client = zerorpc.Events(zmq.DEALER)
     client.connect(endpoint)
 
-    for i in xrange(6):
+    for i in range(6):
         client.emit('myevent' + str(i), (i,))
         event = server.recv()
-        print event
+        print(event)
         assert event.name == 'myevent' + str(i)
         assert list(event.args) == [i]
 
@@ -148,7 +152,7 @@ def test_events_dealer_router():
         reply_event.identity = event.identity
         server.emit_event(reply_event)
         event = client.recv()
-        print event
+        print(event)
         assert event.name == 'answser' + str(i * 2)
         assert list(event.args) == [i * 2]
 
@@ -161,67 +165,35 @@ def test_events_push_pull():
     client = zerorpc.Events(zmq.PUSH)
     client.connect(endpoint)
 
-    for x in xrange(10):
+    for x in range(10):
         client.emit('myevent', (x,))
 
-    for x in xrange(10):
+    for x in range(10):
         event = server.recv()
-        print event
+        print(event)
         assert event.name == 'myevent'
         assert list(event.args) == [x]
 
 
 def test_msgpack():
     context = zerorpc.Context()
-    event = zerorpc.Event('myevent', ('a',), context=context)
-    print event
-    assert type(event.name) == str
+    event = zerorpc.Event(u'myevent', (u'a',), context=context)
+    print(event)
+    # note here that str is an unicode string in all Python version (thanks to
+    # the builtin str import).
+    assert isinstance(event.name, str)
     for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
+        assert isinstance(key, str)
+    assert isinstance(event.header[u'message_id'], bytes)
+    assert isinstance(event.header[u'v'], int)
+    assert isinstance(event.args[0], str)
 
     packed = event.pack()
     event = event.unpack(packed)
-    print event
-    assert type(event.name) == str
+    print(event)
+    assert isinstance(event.name, str)
     for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == str
-
-    event = zerorpc.Event('myevent', (u'a',), context=context)
-    print event
-    assert type(event.name) == str
-    for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == unicode
-
-    packed = event.pack()
-    event = event.unpack(packed)
-    print event
-    assert type(event.name) == str
-    for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == unicode
-
-    event = zerorpc.Event('myevent', (u'a', 'b'), context=context)
-    print event
-    assert type(event.name) == str
-    for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == unicode
-    assert type(event.args[1]) == str
-
-    packed = event.pack()
-    event = event.unpack(packed)
-    print event
-    assert type(event.name) == str
-    for key in event.header.keys():
-        assert type(key) == str
-    assert type(event.header['message_id']) == str
-    assert type(event.args[0]) == unicode
-    assert type(event.args[1]) == str
+        assert isinstance(key, str)
+    assert isinstance(event.header[u'message_id'], bytes)
+    assert isinstance(event.header[u'v'], int)
+    assert isinstance(event.args[0], str)

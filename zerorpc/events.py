@@ -23,6 +23,10 @@
 # SOFTWARE.
 
 
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+
 import msgpack
 import gevent.pool
 import gevent.queue
@@ -32,7 +36,7 @@ import gevent.lock
 import logging
 import sys
 
-import gevent_zmq as zmq
+from . import gevent_zmq as zmq
 from .exceptions import TimeoutExpired
 from .context import Context
 from .channel_base import ChannelBase
@@ -45,6 +49,10 @@ else:
     def get_pyzmq_frame_buffer(frame):
         return frame.buffer
 
+# gevent <= 1.1.0.rc5 is missing the Python3 __next__ method.
+if sys.version_info >= (3, 0) and gevent.version_info <= (1, 1, 0, 'rc', '5'):
+    setattr(gevent.queue.Channel, '__next__', gevent.queue.Channel.next)
+
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +64,7 @@ class SequentialSender(object):
 
     def _send(self, parts):
         e = None
-        for i in xrange(len(parts) - 1):
+        for i in range(len(parts) - 1):
             try:
                 self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
             except (gevent.GreenletExit, gevent.Timeout) as e:
@@ -158,11 +166,15 @@ class Event(object):
 
     __slots__ = ['_name', '_args', '_header', '_identity']
 
+    # protocol details:
+    #  - `name` and `header` keys must be unicode strings.
+    #  - `message_id` and 'response_to' values are opaque bytes string.
+    #  - `v' value is an integer.
     def __init__(self, name, args, context, header=None):
         self._name = name
         self._args = args
         if header is None:
-            self._header = {'message_id': context.new_msgid(), 'v': 3}
+            self._header = {u'message_id': context.new_msgid(), u'v': 3}
         else:
             self._header = header
         self._identity = None
@@ -192,7 +204,9 @@ class Event(object):
         self._identity = v
 
     def pack(self):
-        return msgpack.Packer(use_bin_type=True).pack((self._header, self._name, self._args))
+        payload = (self._header, self._name, self._args)
+        r = msgpack.Packer(use_bin_type=True).pack(payload)
+        return r
 
     @staticmethod
     def unpack(blob):
@@ -267,11 +281,11 @@ class Events(ChannelBase):
     def close(self):
         try:
             self._send.close()
-        except AttributeError:
+        except (AttributeError, TypeError, gevent.GreenletExit):
             pass
         try:
             self._recv.close()
-        except AttributeError:
+        except (AttributeError, TypeError, gevent.GreenletExit):
             pass
         self._socket.close()
 
@@ -316,7 +330,7 @@ class Events(ChannelBase):
         r = []
         for endpoint_ in self._resolve_endpoint(endpoint, resolve):
             r.append(self._socket.disconnect(endpoint_))
-            logging.debug('disconnected from %s (status=%s)', endpoint_, r[-1])
+            logger.debug('disconnected from %s (status=%s)', endpoint_, r[-1])
         return r
 
     def new_event(self, name, args, xheader=None):
@@ -330,9 +344,9 @@ class Events(ChannelBase):
             logger.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
-            parts.extend(['', event.pack()])
+            parts.extend([b'', event.pack()])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
-            parts = ('', event.pack())
+            parts = (b'', event.pack())
         else:
             parts = (event.pack(),)
         self._send(parts, timeout)

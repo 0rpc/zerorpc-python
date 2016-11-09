@@ -22,11 +22,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# execfile() doesn't exist in Python 3, this way we are compatible with both.
-exec(compile(open('zerorpc/version.py').read(), 'zerorpc/version.py', 'exec'))
-
 import sys
 
+if sys.version_info < (3, 0):
+    execfile('zerorpc/version.py')
+else:
+    exec(compile(open('zerorpc/version.py', encoding='utf8').read(), 'zerorpc/version.py', 'exec'))
 
 try:
     from setuptools import setup
@@ -35,12 +36,18 @@ except ImportError:
 
 
 requirements = [
-    'gevent>=1.0',
     'msgpack-python>=0.4.0',
-    'pyzmq>=13.1.0'
+    'pyzmq>=13.1.0',
+    'future',
 ]
+
 if sys.version_info < (2, 7):
     requirements.append('argparse')
+
+if sys.version_info < (3, 0):
+    requirements.append('gevent>=1.0')
+else:
+    requirements.append('gevent>=1.1rc5')
 
 
 setup(

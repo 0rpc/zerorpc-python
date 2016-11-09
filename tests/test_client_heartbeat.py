@@ -23,10 +23,15 @@
 # SOFTWARE.
 
 
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import next
+from builtins import range
+
 import gevent
 
 import zerorpc
-from testutils import teardown, random_ipc_endpoint, TIME_FACTOR
+from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
 
 
 def test_client_server_hearbeat():
@@ -48,7 +53,7 @@ def test_client_server_hearbeat():
     client.connect(endpoint)
 
     assert client.lolita() == 42
-    print 'GOT ANSWER'
+    print('GOT ANSWER')
 
 
 def test_client_server_activate_heartbeat():
@@ -69,7 +74,7 @@ def test_client_server_activate_heartbeat():
     client.connect(endpoint)
 
     assert client.lolita() == 42
-    print 'GOT ANSWER'
+    print('GOT ANSWER')
 
 
 def test_client_server_passive_hearbeat():
@@ -93,7 +98,7 @@ def test_client_server_passive_hearbeat():
     client.connect(endpoint)
 
     assert client.slow() == 2
-    print 'GOT ANSWER'
+    print('GOT ANSWER')
 
 
 def test_client_hb_doesnt_linger_on_streaming():
@@ -103,7 +108,7 @@ def test_client_hb_doesnt_linger_on_streaming():
 
         @zerorpc.stream
         def iter(self):
-            return xrange(42)
+            return range(42)
 
     srv = MySrv(heartbeat=TIME_FACTOR * 1, context=zerorpc.Context())
     srv.bind(endpoint)
@@ -112,8 +117,8 @@ def test_client_hb_doesnt_linger_on_streaming():
     client1 = zerorpc.Client(endpoint, heartbeat=TIME_FACTOR * 1, context=zerorpc.Context())
 
     def test_client():
-        assert list(client1.iter()) == list(xrange(42))
-        print 'sleep 3s'
+        assert list(client1.iter()) == list(range(42))
+        print('sleep 3s')
         gevent.sleep(TIME_FACTOR * 3)
 
     gevent.spawn(test_client).join()
@@ -158,10 +163,10 @@ def test_client_drop_empty_stream():
     client1 = zerorpc.Client(endpoint, heartbeat=TIME_FACTOR * 1, context=zerorpc.Context())
 
     def test_client():
-        print 'grab iter'
+        print('grab iter')
         i = client1.iter()
 
-        print 'sleep 3s'
+        print('sleep 3s')
         gevent.sleep(TIME_FACTOR * 3)
 
     gevent.spawn(test_client).join()
@@ -174,7 +179,7 @@ def test_client_drop_stream():
 
         @zerorpc.stream
         def iter(self):
-            return xrange(500)
+            return range(500)
 
     srv = MySrv(heartbeat=TIME_FACTOR * 1, context=zerorpc.Context())
     srv.bind(endpoint)
@@ -183,13 +188,13 @@ def test_client_drop_stream():
     client1 = zerorpc.Client(endpoint, heartbeat=TIME_FACTOR * 1, context=zerorpc.Context())
 
     def test_client():
-        print 'grab iter'
+        print('grab iter')
         i = client1.iter()
 
-        print 'consume some'
-        assert list(next(i) for x in xrange(142)) == list(xrange(142))
+        print('consume some')
+        assert list(next(i) for x in range(142)) == list(range(142))
 
-        print 'sleep 3s'
+        print('sleep 3s')
         gevent.sleep(TIME_FACTOR * 3)
 
     gevent.spawn(test_client).join()
