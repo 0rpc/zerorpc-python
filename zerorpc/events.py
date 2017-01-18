@@ -231,13 +231,13 @@ class Event(object):
     def identity(self, v):
         self._identity = v
 
-    def pack(self, pack_func):
+    def pack(self, pack_func=_pack):
         payload = (self._header, self._name, self._args)
         r = pack_func(payload)
         return r
 
     @staticmethod
-    def unpack(blob, unpack_func):
+    def unpack(blob, unpack_func=_unpack):
         unpacked_msg = unpack_func(blob)
 
         try:
