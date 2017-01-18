@@ -162,6 +162,34 @@ class Receiver(SequentialReceiver):
             raise TimeoutExpired(timeout)
 
 
+def _pack(payload):
+    return msgpack.Packer(use_bin_type=True).pack(payload)
+
+
+def _unpack(blob):
+    unpacker = msgpack.Unpacker(encoding='utf-8')
+    unpacker.feed(blob)
+    return unpacker.unpack()
+
+
+def _packer(**kwargs):
+    kwargs['use_bin_type'] = True
+
+    def pack(payload):
+        return msgpack.Packer(**kwargs).pack(payload)
+    return pack
+
+
+def _unpacker(**kwargs):
+    kwargs['encoding'] = 'utf-8'
+
+    def unpack(blob):
+        unpacker = msgpack.Unpacker(**kwargs)
+        unpacker.feed(blob)
+        return unpacker.unpack()
+    return unpack
+
+
 class Event(object):
 
     __slots__ = ['_name', '_args', '_header', '_identity']
@@ -203,16 +231,14 @@ class Event(object):
     def identity(self, v):
         self._identity = v
 
-    def pack(self):
+    def pack(self, pack_func):
         payload = (self._header, self._name, self._args)
-        r = msgpack.Packer(use_bin_type=True).pack(payload)
+        r = pack_func(payload)
         return r
 
     @staticmethod
-    def unpack(blob):
-        unpacker = msgpack.Unpacker(encoding='utf-8')
-        unpacker.feed(blob)
-        unpacked_msg = unpacker.unpack()
+    def unpack(blob, unpack_func):
+        unpacked_msg = unpack_func(blob)
 
         try:
             (header, name, args) = unpacked_msg
@@ -243,7 +269,7 @@ class Event(object):
 
 
 class Events(ChannelBase):
-    def __init__(self, zmq_socket_type, context=None):
+    def __init__(self, zmq_socket_type, context=None, pack=None, unpack=None):
         self._debug = False
         self._zmq_socket_type = zmq_socket_type
         self._context = context or Context.get_instance()
@@ -262,6 +288,19 @@ class Events(ChannelBase):
             self._recv = SequentialReceiver(self._socket)
         else:
             self._recv = None
+
+        if pack is None:
+            self._pack = _pack
+        elif isinstance(pack, dict):
+            self._pack = _packer(**pack)
+        else:
+            self._pack = pack
+        if unpack is None:
+            self._unpack = _unpack
+        elif isinstance(unpack, dict):
+            self._unpack = _unpacker(**unpack)
+        else:
+            self._unpack = unpack
 
     @property
     def recv_is_supported(self):
@@ -344,11 +383,11 @@ class Events(ChannelBase):
             logger.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
-            parts.extend([b'', event.pack()])
+            parts.extend([b'', event.pack(self._pack)])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
-            parts = (b'', event.pack())
+            parts = (b'', event.pack(self._pack))
         else:
-            parts = (event.pack(),)
+            parts = (event.pack(self._pack),)
         self._send(parts, timeout)
 
     def recv(self, timeout=None):
@@ -362,7 +401,7 @@ class Events(ChannelBase):
         else:
             identity = None
             blob = parts[0]
-        event = Event.unpack(get_pyzmq_frame_buffer(blob))
+        event = Event.unpack(get_pyzmq_frame_buffer(blob), self._unpack)
         event.identity = identity
         if self._debug:
             logger.debug('<-- %s', event)

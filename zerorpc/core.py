@@ -281,8 +281,8 @@ class ClientBase(object):
 class Server(SocketBase, ServerBase):
 
     def __init__(self, methods=None, name=None, context=None, pool_size=None,
-            heartbeat=5):
-        SocketBase.__init__(self, zmq.ROUTER, context)
+            heartbeat=5, pack=None, unpack=None):
+        SocketBase.__init__(self, zmq.ROUTER, context, pack=pack, unpack=unpack)
         if methods is None:
             methods = self
 
@@ -299,8 +299,8 @@ class Server(SocketBase, ServerBase):
 class Client(SocketBase, ClientBase):
 
     def __init__(self, connect_to=None, context=None, timeout=30, heartbeat=5,
-            passive_heartbeat=False):
-        SocketBase.__init__(self, zmq.DEALER, context=context)
+            passive_heartbeat=False, pack=None, unpack=None):
+        SocketBase.__init__(self, zmq.DEALER, context=context, pack=pack, unpack=unpack)
         ClientBase.__init__(self, self._events, context, timeout, heartbeat,
                 passive_heartbeat)
         if connect_to:
@@ -313,8 +313,8 @@ class Client(SocketBase, ClientBase):
 
 class Pusher(SocketBase):
 
-    def __init__(self, context=None, zmq_socket=zmq.PUSH):
-        super(Pusher, self).__init__(zmq_socket, context=context)
+    def __init__(self, context=None, zmq_socket=zmq.PUSH, pack=None, unpack=None):
+        super(Pusher, self).__init__(zmq_socket, context=context, pack=pack, unpack=unpack)
 
     def __call__(self, method, *args):
         self._events.emit(method, args,
@@ -326,8 +326,8 @@ class Pusher(SocketBase):
 
 class Puller(SocketBase):
 
-    def __init__(self, methods=None, context=None, zmq_socket=zmq.PULL):
-        super(Puller, self).__init__(zmq_socket, context=context)
+    def __init__(self, methods=None, context=None, zmq_socket=zmq.PULL, pack=None, unpack=None):
+        super(Puller, self).__init__(zmq_socket, context=context, pack=pack, unpack=unpack)
 
         if methods is None:
             methods = self
@@ -378,15 +378,15 @@ class Puller(SocketBase):
 
 class Publisher(Pusher):
 
-    def __init__(self, context=None):
-        super(Publisher, self).__init__(context=context, zmq_socket=zmq.PUB)
+    def __init__(self, context=None, pack=None, unpack=None):
+        super(Publisher, self).__init__(context=context, zmq_socket=zmq.PUB, pack=pack, unpack=unpack)
 
 
 class Subscriber(Puller):
 
-    def __init__(self, methods=None, context=None):
+    def __init__(self, methods=None, context=None, pack=None, unpack=None):
         super(Subscriber, self).__init__(methods=methods, context=context,
-                zmq_socket=zmq.SUB)
+                zmq_socket=zmq.SUB, pack=pack, unpack=unpack)
         self._events.setsockopt(zmq.SUBSCRIBE, b'')
 
 

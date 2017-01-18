@@ -29,9 +29,9 @@ from .events import Events
 
 class SocketBase(object):
 
-    def __init__(self, zmq_socket_type, context=None):
+    def __init__(self, zmq_socket_type, context=None, pack=None, unpack=None):
         self._context = context or Context.get_instance()
-        self._events = Events(zmq_socket_type, context)
+        self._events = Events(zmq_socket_type, context, pack=pack, unpack=unpack)
 
     def close(self):
         self._events.close()
