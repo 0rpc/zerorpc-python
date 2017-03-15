@@ -61,6 +61,8 @@ parser.add_argument('--timeout', default=30, metavar='seconds', type=int,
 parser.add_argument('--heartbeat', default=5, metavar='seconds', type=int,
                     help='heartbeat frequency. You should always use \
                     the same frequency as the server. (default: 5s)')
+parser.add_argument('--pool-size', default=None, metavar='count', type=int,
+                    help='size of worker pool. --server only.')
 parser.add_argument('-j', '--json', default=False, action='store_true',
                     help='arguments are in JSON format and will be be parsed \
                     before being sent to the remote')
@@ -116,7 +118,7 @@ def run_server(args):
     if callable(server_obj):
         server_obj = server_obj()
 
-    server = zerorpc.Server(server_obj, heartbeat=args.heartbeat)
+    server = zerorpc.Server(server_obj, heartbeat=args.heartbeat, pool_size=args.pool_size)
     if args.debug:
         server.debug = True
     setup_links(args, server)
