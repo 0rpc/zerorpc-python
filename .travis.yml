@@ -10,21 +10,31 @@ env:
   - TOXENV=py26-pyzmq13
   - TOXENV=py26-pyzmq14
   - TOXENV=py26-pyzmq15
+  - TOXENV=py26-pyzmq16
 
   - TOXENV=py27-pyzmq
   - TOXENV=py27-pyzmq13
   - TOXENV=py27-pyzmq14
   - TOXENV=py27-pyzmq15
+  - TOXENV=py27-pyzmq16
 
   - TOXENV=py34-pyzmq
   - TOXENV=py34-pyzmq13
   - TOXENV=py34-pyzmq14
   - TOXENV=py34-pyzmq15
+  - TOXENV=py34-pyzmq16
 
   - TOXENV=py35-pyzmq
   - TOXENV=py35-pyzmq13
   - TOXENV=py35-pyzmq14
   - TOXENV=py35-pyzmq15
+  - TOXENV=py35-pyzmq16
+
+  - TOXENV=py36-pyzmq
+  - TOXENV=py36-pyzmq13
+  - TOXENV=py36-pyzmq14
+  - TOXENV=py36-pyzmq15
+  - TOXENV=py36-pyzmq16
 
   - TOXENV=flakes
 
