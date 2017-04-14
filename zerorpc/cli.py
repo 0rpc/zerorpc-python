@@ -235,6 +235,14 @@ def zerorpc_inspect(client, method=None, long_doc=True, include_argspec=True):
 
     return longest_name_len, detailled_methods, service_name
 
+def load_json_or_raw(s):
+    """
+    Load string to json object or just return it
+    """
+    try:
+        return json.loads(s)
+    except ValueError:
+        return s
 
 def run_client(args):
     client = zerorpc.Client(timeout=args.timeout, heartbeat=args.heartbeat,
@@ -263,7 +271,7 @@ def run_client(args):
             print('[{0}]\nNo documentation for "{1}".'.format(service, args.command))
         return
     if args.json:
-        call_args = [json.loads(x) for x in args.params]
+        call_args = [load_json_or_raw(x) for x in args.params]
     else:
         call_args = args.params
     results = client(args.command, *call_args)
