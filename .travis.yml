@@ -1,6 +1,6 @@
 sudo: false
 language: python
-python: 3.5
+python: 3.6
 
 matrix:
   fast_finish: true
@@ -25,45 +25,6 @@ env:
   - TOXENV=py35-pyzmq13
   - TOXENV=py35-pyzmq14
   - TOXENV=py35-pyzmq15
-
-
-  - TOXENV=py27-pyzmq13.0
-  - TOXENV=py27-pyzmq13.1
-
-  - TOXENV=py35-pyzmq13.0
-  - TOXENV=py35-pyzmq13.1
-
-
-  - TOXENV=py27-pyzmq14.0
-  - TOXENV=py27-pyzmq14.1
-  - TOXENV=py27-pyzmq14.2
-  - TOXENV=py27-pyzmq14.3
-  - TOXENV=py27-pyzmq14.4
-  - TOXENV=py27-pyzmq14.5
-  - TOXENV=py27-pyzmq14.6
-  - TOXENV=py27-pyzmq14.7
-
-  - TOXENV=py35-pyzmq14.0
-  - TOXENV=py35-pyzmq14.1
-  - TOXENV=py35-pyzmq14.2
-  - TOXENV=py35-pyzmq14.3
-  - TOXENV=py35-pyzmq14.4
-  - TOXENV=py35-pyzmq14.5
-  - TOXENV=py35-pyzmq14.6
-  - TOXENV=py35-pyzmq14.7
-
-
-  - TOXENV=py27-pyzmq15.0
-  - TOXENV=py27-pyzmq15.1
-  - TOXENV=py27-pyzmq15.2
-  - TOXENV=py27-pyzmq15.3
-  - TOXENV=py27-pyzmq15.4
-
-  - TOXENV=py35-pyzmq15.0
-  - TOXENV=py35-pyzmq15.1
-  - TOXENV=py35-pyzmq15.2
-  - TOXENV=py35-pyzmq15.3
-  - TOXENV=py35-pyzmq15.4
 
   - TOXENV=flakes
 
