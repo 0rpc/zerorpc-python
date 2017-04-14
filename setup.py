@@ -44,7 +44,9 @@ requirements = [
 if sys.version_info < (2, 7):
     requirements.append('argparse')
 
-if sys.version_info < (3, 0):
+if sys.version_info < (2, 7):
+    requirements.append('gevent==1.1.*')
+elif sys.version_info < (3, 0):
     requirements.append('gevent>=1.0')
 else:
     requirements.append('gevent>=1.1rc5')
