@@ -1,6 +1,8 @@
 sudo: false
 language: python
-python: 3.6
+python:
+  - 3.5
+  - 3.6
 
 matrix:
   fast_finish: true
@@ -36,12 +38,3 @@ addons:
 
 install: pip install tox
 script: tox
-
-# Tweak for adding python3.6; see
-# https://github.com/travis-ci/travis-ci/issues/4794
-addons:
-  apt:
-    sources:
-      - deadsnakes
-    packages:
-      - python3.6
