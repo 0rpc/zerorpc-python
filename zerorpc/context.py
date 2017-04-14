@@ -37,8 +37,8 @@ class Context(zmq.Context):
 
     def __init__(self):
         super(zmq.Context, self).__init__()
-        self._middlewares = []
-        self._hooks = {
+        self.__dict__['_middlewares'] = []
+        self.__dict__['_hooks'] = {
             'resolve_endpoint': [],
             'load_task_context': [],
             'get_task_context': [],
@@ -50,6 +50,9 @@ class Context(zmq.Context):
             'client_after_request': [],
             'client_patterns_list': [],
         }
+        prop_funcs = ['_msg_id_base', '_msg_id_counter', '_msg_id_counter_stop']
+        for func in prop_funcs:
+            self.__dict__[func] = 0
         self._reset_msgid()
 
     # NOTE: pyzmq 13.0.0 messed up with setattr (they turned it into a
