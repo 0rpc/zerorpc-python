@@ -222,7 +222,6 @@ def test_exception_compat_v1():
 
 
 def test_removed_unscriptable_error_format_args_spec():
-
     class MySrv(zerorpc.Server):
         pass
 
