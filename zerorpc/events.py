@@ -36,7 +36,7 @@ import gevent.lock
 import logging
 import sys
 
-from . import gevent_zmq as zmq
+from zmq import green as zmq
 from .exceptions import TimeoutExpired
 from .context import Context
 from .channel_base import ChannelBase

@@ -36,7 +36,7 @@ import gevent.event
 import gevent.local
 import gevent.lock
 
-from . import gevent_zmq as zmq
+from zmq import green as zmq
 from .exceptions import TimeoutExpired, RemoteError, LostRemote
 from .channel import ChannelMultiplexer, BufferedChannel
 from .socket import SocketBase
