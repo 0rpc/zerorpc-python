@@ -1,30 +1,48 @@
 sudo: false
 language: python
-python:
-  - 2.6
-  - 2.7
-  - 3.4
-  - 3.5
-env:
-  matrix:
-    - PYZMQ='pyzmq>=15'
-    - PYZMQ='pyzmq>=14,<15'
-    - PYZMQ='pyzmq>=13,<14'
+python: 3.5
+
 matrix:
   fast_finish: true
+
+env:
+  - TOXENV=py26-pyzmq
+  - TOXENV=py26-pyzmq13
+  - TOXENV=py26-pyzmq14
+  - TOXENV=py26-pyzmq15
+  - TOXENV=py26-pyzmq16
+
+  - TOXENV=py27-pyzmq
+  - TOXENV=py27-pyzmq13
+  - TOXENV=py27-pyzmq14
+  - TOXENV=py27-pyzmq15
+  - TOXENV=py27-pyzmq16
+
+  - TOXENV=py34-pyzmq
+  - TOXENV=py34-pyzmq13
+  - TOXENV=py34-pyzmq14
+  - TOXENV=py34-pyzmq15
+  - TOXENV=py34-pyzmq16
+
+  - TOXENV=py35-pyzmq
+  - TOXENV=py35-pyzmq13
+  - TOXENV=py35-pyzmq14
+  - TOXENV=py35-pyzmq15
+  - TOXENV=py35-pyzmq16
+
+  - TOXENV=py36-pyzmq
+  - TOXENV=py36-pyzmq13
+  - TOXENV=py36-pyzmq14
+  - TOXENV=py36-pyzmq15
+  - TOXENV=py36-pyzmq16
+
+  - TOXENV=flakes
+
 addons:
   apt:
     packages:
       - python-dev
       - libevent-dev
-install:
-  - if [ $TRAVIS_PYTHON_VERSION != '2.6' ]; then
-    pip install flake8;
-    fi
-  - "pip install nose $PYZMQ"
-  - pip install .
-script:
-  - if [ $TRAVIS_PYTHON_VERSION != '2.6' ]; then
-    flake8 --ignore=E501,E128 zerorpc bin;
-    fi
-  - nosetests -v
+
+install: pip install tox
+script: tox
