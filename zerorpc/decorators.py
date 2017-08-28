@@ -33,7 +33,7 @@ class DecoratorBase(object):
     def __init__(self, functor):
         self._functor = functor
         self.__doc__ = functor.__doc__
-        self.__name__ = functor.__name__
+        self.__name__ = getattr(functor, "__name__", str(functor))
 
     def __get__(self, instance, type_instance=None):
         if instance is None:
