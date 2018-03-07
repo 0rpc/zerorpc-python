@@ -197,3 +197,30 @@ def test_msgpack():
     assert isinstance(event.header[u'message_id'], bytes)
     assert isinstance(event.header[u'v'], int)
     assert isinstance(event.args[0], str)
+
+
+def test_msgpack_numpy():
+    import numpy as np
+    context = zerorpc.Context()
+    test_array = np.arange(10)
+    event = zerorpc.Event(u'myevent', (test_array,), context=context)
+    print(event)
+    # note here that str is an unicode string in all Python version (thanks to
+    # the builtin str import).
+    assert isinstance(event.name, str)
+    for key in event.header.keys():
+        assert isinstance(key, str)
+    assert isinstance(event.header[u'message_id'], bytes)
+    assert isinstance(event.header[u'v'], int)
+    assert isinstance(event.args[0], np.ndarray)
+
+    packed = event.pack()
+    event = event.unpack(packed)
+    print(event)
+    assert isinstance(event.name, str)
+    for key in event.header.keys():
+        assert isinstance(key, str)
+    assert isinstance(event.header[u'message_id'], bytes)
+    assert isinstance(event.header[u'v'], int)
+    assert isinstance(event.args[0], np.ndarray)
+    assert np.array_equal(test_array, event.args[0])
