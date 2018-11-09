@@ -40,14 +40,14 @@ class ChannelBase(object):
     def close(self):
         raise NotImplementedError()
 
-    def new_event(self, name, args, xheader=None):
+    def new_event(self, name, args, kwargs=None, xheader=None):
         raise NotImplementedError()
 
     def emit_event(self, event, timeout=None):
         raise NotImplementedError()
 
-    def emit(self, name, args, xheader=None, timeout=None):
-        event = self.new_event(name, args, xheader)
+    def emit(self, name, args, kwargs=None, xheader=None, timeout=None):
+        event = self.new_event(name, args, kwargs, xheader)
         return self.emit_event(event, timeout)
 
     def recv(self, timeout=None):

@@ -52,25 +52,25 @@ def test_context():
 
 def test_event():
     context = MockupContext()
-    event = zerorpc.Event('mylittleevent', (None,), context=context)
+    event = zerorpc.Event('mylittleevent', (None,), {}, context=context)
     print(event)
     assert event.name == 'mylittleevent'
     assert event.header['message_id'] == 0
     assert event.args == (None,)
 
-    event = zerorpc.Event('mylittleevent2', ('42',), context=context)
+    event = zerorpc.Event('mylittleevent2', ('42',), {}, context=context)
     print(event)
     assert event.name == 'mylittleevent2'
     assert event.header['message_id'] == 1
     assert event.args == ('42',)
 
-    event = zerorpc.Event('mylittleevent3', ('a', 42), context=context)
+    event = zerorpc.Event('mylittleevent3', ('a', 42), {}, context=context)
     print(event)
     assert event.name == 'mylittleevent3'
     assert event.header['message_id'] == 2
     assert event.args == ('a', 42)
 
-    event = zerorpc.Event('mylittleevent4', ('', 21), context=context)
+    event = zerorpc.Event('mylittleevent4', ('', 21), {}, context=context)
     print(event)
     assert event.name == 'mylittleevent4'
     assert event.header['message_id'] == 3
@@ -84,14 +84,14 @@ def test_event():
     assert unpacked.header['message_id'] == 3
     assert list(unpacked.args) == ['', 21]
 
-    event = zerorpc.Event('mylittleevent5', ('c', 24, True),
+    event = zerorpc.Event('mylittleevent5', ('c', 24, True), {},
             header={'lol': 'rofl'}, context=None)
     print(event)
     assert event.name == 'mylittleevent5'
     assert event.header['lol'] == 'rofl'
     assert event.args == ('c', 24, True)
 
-    event = zerorpc.Event('mod', (42,), context=context)
+    event = zerorpc.Event('mod', (42,), {}, context=context)
     print(event)
     assert event.name == 'mod'
     assert event.header['message_id'] == 4
@@ -131,10 +131,10 @@ def test_events_req_rep2():
         assert event.name == 'myevent' + str(i)
         assert list(event.args) == [i]
 
-        server.emit('answser' + str(i * 2), (i * 2,))
+        server.emit('answer' + str(i * 2), (i * 2,))
         event = client.recv()
         print(event)
-        assert event.name == 'answser' + str(i * 2)
+        assert event.name == 'answer' + str(i * 2)
         assert list(event.args) == [i * 2]
 
 
@@ -153,7 +153,7 @@ def test_events_dealer_router():
         assert event.name == 'myevent' + str(i)
         assert list(event.args) == [i]
 
-        reply_event = server.new_event('answser' + str(i * 2), (i * 2,))
+        reply_event = server.new_event('answser' + str(i * 2), (i * 2,), {})
         reply_event.identity = event.identity
         server.emit_event(reply_event)
         event = client.recv()
@@ -171,7 +171,7 @@ def test_events_push_pull():
     client.connect(endpoint)
 
     for x in range(10):
-        client.emit('myevent', (x,))
+        client.emit('myevent', (x,), {})
 
     for x in range(10):
         event = server.recv()
@@ -182,7 +182,7 @@ def test_events_push_pull():
 
 def test_msgpack():
     context = zerorpc.Context()
-    event = zerorpc.Event(u'myevent', (u'a',), context=context)
+    event = zerorpc.Event(u'myevent', (u'a',), {}, context=context)
     print(event)
     # note here that str is an unicode string in all Python version (thanks to
     # the builtin str import).

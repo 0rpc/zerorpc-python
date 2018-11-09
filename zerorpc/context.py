@@ -41,8 +41,11 @@ class Context(zmq.Context):
         self._middlewares = []
         self._hooks = {
             'resolve_endpoint': [],
+            'raise_error': [],
+            'call_procedure': [],            
             'load_task_context': [],
             'get_task_context': [],
+            'inspect_error': [],
             'server_before_exec': [],
             'server_after_exec': [],
             'server_inspect_exception': [],
@@ -175,7 +178,7 @@ class Context(zmq.Context):
     #
     def hook_server_before_exec(self, request_event):
         """Called when a method is about to be executed on the server."""
-
+        request_event.kwargs.pop('async', False)  # need to remove reserved keyword
         for functor in self._hooks['server_before_exec']:
             functor(request_event)
 

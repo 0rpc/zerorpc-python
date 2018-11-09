@@ -27,8 +27,8 @@ from __future__ import absolute_import
 from builtins import str
 from builtins import range
 
-import msgpack
-import pickle
+# import msgpack
+# import pickle
 import gevent.pool
 import gevent.queue
 import gevent.event
@@ -165,15 +165,16 @@ class Receiver(SequentialReceiver):
 
 class Event(object):
 
-    __slots__ = ['_name', '_args', '_header', '_identity', '_serializer']
+    __slots__ = ['_name', '_args', '_kwargs', '_header', '_identity', '_serializer']
 
     # protocol details:
     #  - `name` and `header` keys must be unicode strings.
     #  - `message_id` and 'response_to' values are opaque bytes string.
     #  - `v' value is an integer.
-    def __init__(self, name, args, context, header=None):
+    def __init__(self, name, args, kwargs, context, header=None):
         self._name = name
         self._args = args
+        self._kwargs = kwargs or {}
         if header is None:
             self._header = {u'message_id': context.new_msgid(), u'v': 3}
         else:
@@ -195,6 +196,10 @@ class Event(object):
     @property
     def args(self):
         return self._args
+    
+    @property
+    def kwargs(self):
+        return self._kwargs
 
     @property
     def identity(self):
@@ -205,7 +210,7 @@ class Event(object):
         self._identity = v
 
     def pack(self, serializer):
-        payload = (self._header, self._name, self._args)
+        payload = (self._header, self._name, self._args, self._kwargs)
         # r = msgpack.Packer(use_bin_type=True).pack(payload)
         r =  serializer.pack(payload)
         return r
@@ -217,7 +222,7 @@ class Event(object):
         # unpacked_msg = unpacker.unpack()
         unpacked_msg = serializer.unpack(blob)
         try:
-            (header, name, args) = unpacked_msg
+            (header, name, args, kwargs) = unpacked_msg
         except Exception as e:
             raise Exception('invalid msg format "{0}": {1}'.format(
                 unpacked_msg, e))
@@ -226,7 +231,7 @@ class Event(object):
         if not isinstance(header, dict):
             header = {}
 
-        return Event(name, args, None, header)
+        return Event(name, args, kwargs, None, header)
 
     def __str__(self, ignore_args=False):
         if ignore_args:
@@ -335,8 +340,8 @@ class Events(ChannelBase):
             logger.debug('disconnected from %s (status=%s)', endpoint_, r[-1])
         return r
 
-    def new_event(self, name, args, xheader=None):
-        event = Event(name, args, context=self._context)
+    def new_event(self, name, args, kwargs, xheader=None):
+        event = Event(name, args, kwargs, context=self._context)
         if xheader:
             event.header.update(xheader)
         return event

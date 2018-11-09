@@ -212,7 +212,7 @@ def test_do_some_req_rep():
         for x in range(20):
             event = server_bufchan.recv()
             assert event.name == 'add'
-            server_bufchan.emit('OK', (sum(event.args),))
+            server_bufchan.emit('OK', (sum(event.args),), {})
         server_bufchan.close()
 
     coro_pool.spawn(server_do)

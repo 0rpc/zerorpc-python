@@ -59,8 +59,8 @@ class ChannelMultiplexer(ChannelBase):
         if self._channel_dispatcher_task:
             self._channel_dispatcher_task.kill()
 
-    def new_event(self, name, args, xheader=None):
-        return self._events.new_event(name, args, xheader)
+    def new_event(self, name, args, kwargs=None, xheader=None):
+        return self._events.new_event(name, args, kwargs, xheader)
 
     def emit_event(self, event, timeout=None):
         return self._events.emit_event(event, timeout)
@@ -139,8 +139,8 @@ class Channel(ChannelBase):
             logger.debug('-x- closed channel %s', self._channel_id)
             self._channel_id = None
 
-    def new_event(self, name, args, xheader=None):
-        event = self._multiplexer.new_event(name, args, xheader)
+    def new_event(self, name, args, kwargs=None, xheader=None):
+        event = self._multiplexer.new_event(name, args, kwargs, xheader)
         if self._channel_id is None:
             self._channel_id = event.header[u'message_id']
             self._multiplexer._active_channels[self._channel_id] = self
@@ -222,11 +222,12 @@ class BufferedChannel(ChannelBase):
                     self.close()
                     return
 
-    def new_event(self, name, args, xheader=None):
-        return self._channel.new_event(name, args, xheader)
+    def new_event(self, name, args, kwargs, xheader=None):
+        return self._channel.new_event(name, args, kwargs, xheader)
 
     def emit_event(self, event, timeout=None):
-        if self._remote_queue_open_slots == 0:
+        # if self._remote_queue_open_slots == 0:
+        if not self._remote_queue_open_slots:
             self._remote_can_recv.clear()
             self._remote_can_recv.wait(timeout=timeout)
         self._remote_queue_open_slots -= 1

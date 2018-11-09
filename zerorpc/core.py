@@ -121,10 +121,10 @@ class ServerBase(object):
             lambda m: self._methods[m]._zerorpc_args()
         self._methods['_zerorpc_inspect'] = self._zerorpc_inspect
 
-    def __call__(self, method, *args):
+    def __call__(self, method, *args, **kwargs):
         if method not in self._methods:
             raise NameError(method)
-        return self._methods[method](*args)
+        return self._methods[method](*args, **kwargs)
 
     def _print_traceback(self, protocol_v1, exc_infos):
         logger.exception('')
@@ -150,6 +150,7 @@ class ServerBase(object):
             functor = self._methods.get(event.name, None)
             if functor is None:
                 raise NameError(event.name)
+            # import ipdb; ipdb.set_trace()
             functor.pattern.process_call(self._context, bufchan, event, functor)
         except LostRemote:
             exc_infos = list(sys.exc_info())
@@ -237,7 +238,7 @@ class ClientBase(object):
         return pattern.process_answer(self._context, bufchan, request_event,
                 reply_event, self._handle_remote_error)
 
-    def __call__(self, method, *args, **kargs):
+    def __call__(self, method, *args, **kwargs):
         # here `method` is either a string of bytes or an unicode string in
         # Python2 and Python3. Python2: str aka a byte string containing ASCII
         # (unless the user explicitly provide an unicode string). Python3: str
@@ -254,28 +255,27 @@ class ClientBase(object):
         # will already be an UTF-8 encoded bytes string.
         if isinstance(method, bytes):
             method = method.decode('utf-8')
-
-        timeout = kargs.get('timeout', self._timeout)
+        timeout = kwargs.pop('timeout', self._timeout)
         channel = self._multiplexer.channel()
         hbchan = HeartBeatOnChannel(channel, freq=self._heartbeat_freq,
                 passive=self._passive_heartbeat)
-        bufchan = BufferedChannel(hbchan, inqueue_size=kargs.get('slots', 100))
+        bufchan = BufferedChannel(hbchan, inqueue_size=kwargs.pop('slots', 100))
 
         xheader = self._context.hook_get_task_context()
-        request_event = bufchan.new_event(method, args, xheader)
+        request_event = bufchan.new_event(method, args, kwargs, xheader)
         self._context.hook_client_before_request(request_event)
         bufchan.emit_event(request_event)
-
-        if kargs.get('async', False) is False:
+        
+        if kwargs.pop('async', False) is False:
             return self._process_response(request_event, bufchan, timeout)
-
+        
         async_result = gevent.event.AsyncResult()
         gevent.spawn(self._process_response, request_event, bufchan,
                 timeout).link(async_result)
         return async_result
 
     def __getattr__(self, method):
-        return lambda *args, **kargs: self(method, *args, **kargs)
+        return lambda *args, **kwargs: self(method, *args, **kwargs)
 
 
 class Server(SocketBase, ServerBase):
@@ -316,8 +316,8 @@ class Pusher(SocketBase):
     def __init__(self, context=None, zmq_socket=zmq.PUSH):
         super(Pusher, self).__init__(zmq_socket, context=context)
 
-    def __call__(self, method, *args):
-        self._events.emit(method, args,
+    def __call__(self, method, *args, **kwargs):
+        self._events.emit(method, args, kwargs,
                 self._context.hook_get_task_context())
 
     def __getattr__(self, method):
@@ -339,10 +339,10 @@ class Puller(SocketBase):
         self.stop()
         super(Puller, self).close()
 
-    def __call__(self, method, *args):
+    def __call__(self, method, *args, **kwargs):
         if method not in self._methods:
             raise NameError(method)
-        return self._methods[method](*args)
+        return self._methods[method](*args, **kwargs)
 
     def _receiver(self):
         while True:
@@ -425,7 +425,7 @@ def fork_task_context(functor, context=None):
     context = context or Context.get_instance()
     xheader = context.hook_get_task_context()
 
-    def wrapped(*args, **kargs):
+    def wrapped(*args, **kwargs):
         context.hook_load_task_context(xheader)
-        return functor(*args, **kargs)
+        return functor(*args, **kwargs)
     return wrapped
