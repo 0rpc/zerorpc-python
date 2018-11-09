@@ -29,14 +29,19 @@ from builtins import range, object
 
 from zerorpc import zmq
 import zerorpc
-from .testutils import teardown, random_ipc_endpoint
+from zerorpc.serializers.default import Serializer
 
-class MokupContext(object):
+from .testutils import random_ipc_endpoint
+
+
+class MockupContext(object):
     _next_id = 0
 
+    serializer = Serializer()
+
     def new_msgid(self):
-        new_id = MokupContext._next_id
-        MokupContext._next_id += 1
+        new_id = MockupContext._next_id
+        MockupContext._next_id += 1
         return new_id
 
 
@@ -46,7 +51,7 @@ def test_context():
 
 
 def test_event():
-    context = MokupContext()
+    context = MockupContext()
     event = zerorpc.Event('mylittleevent', (None,), context=context)
     print(event)
     assert event.name == 'mylittleevent'
@@ -71,8 +76,8 @@ def test_event():
     assert event.header['message_id'] == 3
     assert event.args == ('', 21)
 
-    packed = event.pack()
-    unpacked = zerorpc.Event.unpack(packed)
+    packed = event.pack(context.serializer)
+    unpacked = zerorpc.Event.unpack(context.serializer, packed)
     print(unpacked)
 
     assert unpacked.name == 'mylittleevent4'
@@ -188,8 +193,8 @@ def test_msgpack():
     assert isinstance(event.header[u'v'], int)
     assert isinstance(event.args[0], str)
 
-    packed = event.pack()
-    event = event.unpack(packed)
+    packed = event.pack(context.serializer)
+    event = event.unpack(context.serializer, packed)
     print(event)
     assert isinstance(event.name, str)
     for key in event.header.keys():

@@ -30,6 +30,7 @@ import uuid
 import random
 
 from . import gevent_zmq as zmq
+from .utils import load_by_path, Singleton
 
 
 class Context(zmq.Context):
@@ -51,10 +52,32 @@ class Context(zmq.Context):
             'client_patterns_list': [],
         }
         self._reset_msgid()
-
+        self._serializer = 'default'
     # NOTE: pyzmq 13.0.0 messed up with setattr (they turned it into a
     # non-op) and you can't assign attributes normally anymore, hence the
     # tricks with self.__dict__ here
+
+    @property
+    def _serializer(self):
+        return self.__dict__['_serializer']
+
+    @_serializer.setter
+    def _serializer(self, value):
+        self.__dict__['_serializer'] = value
+
+    @property
+    def serializer(self):
+        if isinstance(self._serializer, str):
+            self._serializer = self._get_serializer(self._serializer)
+        return self._serializer
+
+    def _get_serializer(self, path):
+        return load_by_path(
+            ".serializers.{0}.Serializer".format(path)
+        )()
+
+    def register_serializer(self, serializer):
+        self._serializer = serializer
 
     @property
     def _middlewares(self):

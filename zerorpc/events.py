@@ -28,6 +28,7 @@ from builtins import str
 from builtins import range
 
 import msgpack
+import pickle
 import gevent.pool
 import gevent.queue
 import gevent.event
@@ -164,7 +165,7 @@ class Receiver(SequentialReceiver):
 
 class Event(object):
 
-    __slots__ = ['_name', '_args', '_header', '_identity']
+    __slots__ = ['_name', '_args', '_header', '_identity', '_serializer']
 
     # protocol details:
     #  - `name` and `header` keys must be unicode strings.
@@ -203,17 +204,18 @@ class Event(object):
     def identity(self, v):
         self._identity = v
 
-    def pack(self):
+    def pack(self, serializer):
         payload = (self._header, self._name, self._args)
-        r = msgpack.Packer(use_bin_type=True).pack(payload)
+        # r = msgpack.Packer(use_bin_type=True).pack(payload)
+        r =  serializer.pack(payload)
         return r
 
     @staticmethod
-    def unpack(blob):
-        unpacker = msgpack.Unpacker(encoding='utf-8')
-        unpacker.feed(blob)
-        unpacked_msg = unpacker.unpack()
-
+    def unpack(serializer, blob):
+        # unpacker = msgpack.Unpacker(encoding='utf-8')
+        # unpacker.feed(blob)
+        # unpacked_msg = unpacker.unpack()
+        unpacked_msg = serializer.unpack(blob)
         try:
             (header, name, args) = unpacked_msg
         except Exception as e:
@@ -344,11 +346,11 @@ class Events(ChannelBase):
             logger.debug('--> %s', event)
         if event.identity:
             parts = list(event.identity or list())
-            parts.extend([b'', event.pack()])
+            parts.extend([b'', event.pack(self.context.serializer)])
         elif self._zmq_socket_type in (zmq.DEALER, zmq.ROUTER):
-            parts = (b'', event.pack())
+            parts = (b'', event.pack(self.context.serializer))
         else:
-            parts = (event.pack(),)
+            parts = (event.pack(self.context.serializer),)
         self._send(parts, timeout)
 
     def recv(self, timeout=None):
@@ -362,7 +364,7 @@ class Events(ChannelBase):
         else:
             identity = None
             blob = parts[0]
-        event = Event.unpack(get_pyzmq_frame_buffer(blob))
+        event = Event.unpack(self._context.serializer, get_pyzmq_frame_buffer(blob))
         event.identity = identity
         if self._debug:
             logger.debug('<-- %s', event)
