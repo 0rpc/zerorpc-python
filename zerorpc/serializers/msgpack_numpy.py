@@ -11,7 +11,7 @@ class Serializer(object):
         return r
 
     def unpack(self, blob):
-        unpacker = msgpack.Unpacker(raw=True)
+        unpacker = msgpack.Unpacker(raw=False)
         unpacker.feed(blob)
         unpacked_msg = unpacker.unpack()
         return unpacked_msg
