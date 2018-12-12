@@ -210,7 +210,7 @@ class Event(object):
 
     @staticmethod
     def unpack(blob):
-        unpacker = msgpack.Unpacker(encoding='utf-8')
+        unpacker = msgpack.Unpacker(raw=False)
         unpacker.feed(blob)
         unpacked_msg = unpacker.unpack()
 
