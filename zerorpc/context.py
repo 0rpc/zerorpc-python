@@ -112,7 +112,7 @@ class Context(zmq.Context):
             self._reset_msgid()
         else:
             self._msg_id_counter = (self._msg_id_counter + 1)
-        return tobytes('{0:08x}'.format(self._msg_id_counter)) + self._msg_id_base
+        return str(tobytes('{0:08x}'.format(self._msg_id_counter)) + self._msg_id_base)
 
     def register_middleware(self, middleware_instance):
         registered_count = 0
