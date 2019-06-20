@@ -92,7 +92,7 @@ parser.add_argument('params', nargs='*',
 def setup_links(args, socket):
     if args.bind:
         for endpoint in args.bind:
-            print('binding to "{0}"'.format(endpoint))
+            print('binding to "{0}"'.format(endpoint), file=sys.stderr)
             socket.bind(endpoint)
     addresses = []
     if args.address:
@@ -100,7 +100,7 @@ def setup_links(args, socket):
     if args.connect:
         addresses.extend(args.connect)
     for endpoint in addresses:
-        print('connecting to "{0}"'.format(endpoint))
+        print('connecting to "{0}"'.format(endpoint), file=sys.stderr)
         socket.connect(endpoint)
 
 
@@ -122,7 +122,7 @@ def run_server(args):
     if args.debug:
         server.debug = True
     setup_links(args, server)
-    print('serving "{0}"'.format(server_obj_path))
+    print('serving "{0}"'.format(server_obj_path), file=sys.stderr)
     return server.run()
 
 
