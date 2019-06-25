@@ -49,7 +49,7 @@ if sys.version_info < (2, 7):
 elif sys.version_info < (3, 0):
     requirements.append('gevent>=1.0')
 else:
-    requirements.append('gevent>=1.1rc5')
+    requirements.append('gevent>=1.1')
 
 
 setup(
