@@ -36,7 +36,7 @@ we will expose the Python "time" module::
 .. note::
    The bind address uses the zeromq address format. You are not limited
    to TCP transport: you could as well specify ipc:///tmp/time to use
-   host-local sockets, for instance. "tcp://*:1234" is a short-hand to
+   host-local sockets, for instance. "tcp://\*:1234" is a short-hand to
    "tcp://0.0.0.0:1234" and means "listen on TCP port 1234, accepting 
    connections on all IP addresses".
 
@@ -137,7 +137,7 @@ the "--bind" option::
 
   $ zerorpc --server --bind tcp://*:1234 --bind ipc:///tmp/time time
 
-You can then connect to it using either "zerorpc tcp://*:1234" or
+You can then connect to it using either "zerorpc tcp://\*:1234" or
 "zerorpc ipc:///tmp/time".
 
 Wait, there is more! You can even mix "--bind" and "--connect". That means
