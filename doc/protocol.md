@@ -231,7 +231,7 @@ FIXME we should rather standardize about the basic introspection calls.
 At the protocol level, streaming is straightforward. When a server wants
 to stream some data, instead of sending a "OK" message, it sends a "STREAM"
 message. The client will know that it needs to keep waiting for more.
-At the end of the sream, a "STREAM_DONE" message is expected.
+At the end of the stream, a "STREAM_DONE" message is expected.
 
 Formal definitions follow.
 
