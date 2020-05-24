@@ -24,6 +24,7 @@ install:
     fi
   - "pip install nose $PYZMQ"
   - pip install .
+  - pip freeze
 script:
   - if [ $TRAVIS_PYTHON_VERSION != '2.6' ]; then
     flake8 --ignore=E501,E128 zerorpc bin;
