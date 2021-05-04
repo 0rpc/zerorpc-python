@@ -215,7 +215,7 @@ def test_exception_compat_v1():
     assert event.name == 'ERR'
     (msg,) = event.args
     print('msg only', msg)
-    assert msg == "NameError('donotexist',)"
+    assert msg in ("NameError('donotexist',)", "NameError('donotexist')")
 
     client_events.close()
     srv.close()

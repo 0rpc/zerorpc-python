@@ -153,7 +153,6 @@ def test_heartbeat_can_open_channel_client_close():
     gevent.sleep(TIME_FACTOR * 3)
     print('CLOSE CLIENT SOCKET!!!')
     client_hbchan.close()
-    client.close()
     if sys.version_info < (2, 7):
         assert_raises(zerorpc.LostRemote, server_hbchan.recv)
     else:
@@ -162,7 +161,7 @@ def test_heartbeat_can_open_channel_client_close():
     print('SERVER LOST CLIENT :)')
     server_hbchan.close()
     server.close()
-
+    client.close()
 
 def test_do_some_req_rep():
     endpoint = random_ipc_endpoint()
