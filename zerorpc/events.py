@@ -63,20 +63,23 @@ class SequentialSender(object):
         self._socket = socket
 
     def _send(self, parts):
-        e = None
+        error = None
         for i in range(len(parts) - 1):
             try:
                 self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
             except (gevent.GreenletExit, gevent.Timeout) as e:
+                error = e
                 if i == 0:
                     raise
                 self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
         try:
             self._socket.send(parts[-1], copy=False)
         except (gevent.GreenletExit, gevent.Timeout) as e:
+            error = e
             self._socket.send(parts[-1], copy=False)
-        if e:
-            raise e
+
+        if error:
+            raise error
 
     def __call__(self, parts, timeout=None):
         if timeout:
@@ -92,20 +95,21 @@ class SequentialReceiver(object):
         self._socket = socket
 
     def _recv(self):
-        e = None
+        error = None
         parts = []
         while True:
             try:
                 part = self._socket.recv(copy=False)
             except (gevent.GreenletExit, gevent.Timeout) as e:
+                error = e
                 if len(parts) == 0:
                     raise
                 part = self._socket.recv(copy=False)
             parts.append(part)
             if not part.more:
                 break
-        if e:
-            raise e
+        if error:
+            raise error
         return parts
 
     def __call__(self, timeout=None):
