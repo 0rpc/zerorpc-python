@@ -1,0 +1,56 @@
+
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PYZMQ: pyzmq>=16.0.4
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+
+    strategy:
+      matrix:
+        python-version:
+        - 2.7
+        - 3.6
+
+    steps:
+    - name: Setup python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: x64
+
+    - name: Test Python version ${{ matrix.python-version }}
+      run: python --version
+
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: install pip packages
+      run: pip install flake8 nose $PYZMQ
+    
+    - name: install current repo as package
+      run: pip install . 
+    
+    - name: List installed packages
+      run: pip freeze
+
+    - name: Run Flake8
+      run: flake8 --ignore=E501,E128,W503,W504 zerorpc bin
+
+    - name: Run Tests
+      run: nosetests -v
+
