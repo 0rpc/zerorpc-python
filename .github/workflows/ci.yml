@@ -32,9 +32,9 @@ jobs:
     steps:
     - name: Setup python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: x64
 
     - name: Test Python version ${{ matrix.python-version }}
       run: python --version
