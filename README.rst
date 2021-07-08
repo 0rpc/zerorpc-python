@@ -1,8 +1,8 @@
 zerorpc
 =======
 
-.. image:: https://github.com/shiplu/0rpc-python/actions/workflows/ci.yml/badge.svg
-    :target: https://travis-ci.org/shiplu/zerorpc-python
+.. image:: https://github.com/shiplu/zerorpc-python/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/shiplu/zerorpc-python/actions
 
 Mailing list: zerorpc@googlegroups.com (https://groups.google.com/d/forum/zerorpc)
 
