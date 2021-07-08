@@ -52,7 +52,7 @@ jobs:
       run: pip freeze
 
     - name: Run Flake8
-      run: flake8 --ignore=E501,E128 zerorpc bin
+      run: flake8 --ignore=E501,E128,W503,W504 zerorpc bin
 
     - name: Run Tests
       run: nosetests -v
