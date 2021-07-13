@@ -21,20 +21,16 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        python-version:
-        - 2.7
-        - 3.6
-        - 3.7
-        - 3.8
-        - 3.9
-    steps:
-    - name: Setup python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-        architecture: x64
+        python-image:
+        - python:2.7-slim
+        - python:3.6-slim
+        - python:3.7-slim
+        - python:3.8-slim
 
-    - name: Test Python version ${{ matrix.python-version }}
+    container:  ${{ matrix.python-image }}
+    steps:
+
+    - name: Test Python version
       run: python --version
 
     - name: Checkout repository
