@@ -33,10 +33,16 @@ import sys
 import inspect
 import os
 import logging
-import collections
 from pprint import pprint
 
 import zerorpc
+
+try:
+    # Try collections.abc for 3.4+
+    from collections.abc import Iterator
+except ImportError:
+    # Fallback to collections for Python 2
+    from collections import Iterator
 
 
 parser = argparse.ArgumentParser(
@@ -267,7 +273,7 @@ def run_client(args):
     else:
         call_args = args.params
     results = client(args.command, *call_args)
-    if not isinstance(results, collections.Iterator):
+    if not isinstance(results, Iterator):
         if args.print_json:
             json.dump(results, sys.stdout)
         else:
