@@ -28,10 +28,16 @@ from __future__ import absolute_import
 from builtins import range
 
 import gevent
-import collections
 
 import zerorpc
 from .testutils import teardown, random_ipc_endpoint, TIME_FACTOR
+
+try:
+    # Try collections.abc for 3.4+
+    from collections.abc import Iterator
+except ImportError:
+    # Fallback to collections for Python 2
+    from collections import Iterator
 
 
 def test_rcp_streaming():
@@ -58,7 +64,7 @@ def test_rcp_streaming():
     assert list(r) == list(range(10))
 
     r = client.xrange(10)
-    assert isinstance(r, collections.Iterator)
+    assert isinstance(r, Iterator)
     l = []
     print('wait 4s for fun')
     gevent.sleep(TIME_FACTOR * 4)
