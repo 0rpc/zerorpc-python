@@ -266,7 +266,10 @@ class ClientBase(object):
         self._context.hook_client_before_request(request_event)
         bufchan.emit_event(request_event)
 
-        if kargs.get('async', False) is False:
+        # In python 3.7, "async" is a reserved keyword, clients should now use
+        # "async_": support both for the time being
+        if (kargs.get('async', False) is False and
+            kargs.get('async_', False) is False):
             return self._process_response(request_event, bufchan, timeout)
 
         async_result = gevent.event.AsyncResult()
