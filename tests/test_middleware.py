@@ -28,7 +28,7 @@ from __future__ import absolute_import
 from builtins import str
 from future.utils import tobytes
 
-from nose.tools import assert_raises
+import pytest
 import gevent
 import gevent.local
 import random
@@ -101,9 +101,9 @@ def test_resolve_endpoint_events():
 
     srv = Srv(heartbeat=TIME_FACTOR * 1, context=c)
     if sys.version_info < (2, 7):
-        assert_raises(zmq.ZMQError, srv.bind, 'some_service')
+        pytest.raises(zmq.ZMQError, srv.bind, 'some_service')
     else:
-        with assert_raises(zmq.ZMQError):
+        with pytest.raises(zmq.ZMQError):
             srv.bind('some_service')
 
     cnt = c.register_middleware(Resolver())

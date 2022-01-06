@@ -27,7 +27,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from builtins import range
 
-from nose.tools import assert_raises
+import pytest
 import gevent
 import sys
 
@@ -59,9 +59,9 @@ def test_close_server_hbchan():
     print('CLOSE SERVER SOCKET!!!')
     server_hbchan.close()
     if sys.version_info < (2, 7):
-        assert_raises(zerorpc.LostRemote, client_hbchan.recv)
+        pytest.raises(zerorpc.LostRemote, client_hbchan.recv)
     else:
-        with assert_raises(zerorpc.LostRemote):
+        with pytest.raises(zerorpc.LostRemote):
             client_hbchan.recv()
     print('CLIENT LOST SERVER :)')
     client_hbchan.close()
@@ -92,9 +92,9 @@ def test_close_client_hbchan():
     print('CLOSE CLIENT SOCKET!!!')
     client_hbchan.close()
     if sys.version_info < (2, 7):
-        assert_raises(zerorpc.LostRemote, server_hbchan.recv)
+        pytest.raises(zerorpc.LostRemote, server_hbchan.recv)
     else:
-        with assert_raises(zerorpc.LostRemote):
+        with pytest.raises(zerorpc.LostRemote):
             server_hbchan.recv()
     print('SERVER LOST CLIENT :)')
     server_hbchan.close()
@@ -123,9 +123,9 @@ def test_heartbeat_can_open_channel_server_close():
     print('CLOSE SERVER SOCKET!!!')
     server_hbchan.close()
     if sys.version_info < (2, 7):
-        assert_raises(zerorpc.LostRemote, client_hbchan.recv)
+        pytest.raises(zerorpc.LostRemote, client_hbchan.recv)
     else:
-        with assert_raises(zerorpc.LostRemote):
+        with pytest.raises(zerorpc.LostRemote):
             client_hbchan.recv()
     print('CLIENT LOST SERVER :)')
     client_hbchan.close()
@@ -155,9 +155,9 @@ def test_heartbeat_can_open_channel_client_close():
     client_hbchan.close()
     client.close()
     if sys.version_info < (2, 7):
-        assert_raises(zerorpc.LostRemote, server_hbchan.recv)
+        pytest.raises(zerorpc.LostRemote, server_hbchan.recv)
     else:
-        with assert_raises(zerorpc.LostRemote):
+        with pytest.raises(zerorpc.LostRemote):
             server_hbchan.recv()
     print('SERVER LOST CLIENT :)')
     server_hbchan.close()
@@ -227,9 +227,9 @@ def test_do_some_req_rep_lost_server():
             assert list(event.args) == [x + x * x]
         client_hbchan.emit('add', (x, x * x))
         if sys.version_info < (2, 7):
-            assert_raises(zerorpc.LostRemote, client_hbchan.recv)
+            pytest.raises(zerorpc.LostRemote, client_hbchan.recv)
         else:
-            with assert_raises(zerorpc.LostRemote):
+            with pytest.raises(zerorpc.LostRemote):
                 client_hbchan.recv()
         client_hbchan.close()
 
@@ -287,9 +287,9 @@ def test_do_some_req_rep_lost_client():
             server_hbchan.emit('OK', (sum(event.args),))
 
         if sys.version_info < (2, 7):
-            assert_raises(zerorpc.LostRemote, server_hbchan.recv)
+            pytest.raises(zerorpc.LostRemote, server_hbchan.recv)
         else:
-            with assert_raises(zerorpc.LostRemote):
+            with pytest.raises(zerorpc.LostRemote):
                 server_hbchan.recv()
         server_hbchan.close()
 
@@ -322,9 +322,9 @@ def test_do_some_req_rep_client_timeout():
                     event = client_hbchan.recv(timeout=TIME_FACTOR * 3)
                     assert event.name == 'OK'
                     assert list(event.args) == [x]
-            assert_raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
+            pytest.raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
         else:
-            with assert_raises(zerorpc.TimeoutExpired):
+            with pytest.raises(zerorpc.TimeoutExpired):
                 for x in range(10):
                     client_hbchan.emit('sleep', (x,))
                     event = client_hbchan.recv(timeout=TIME_FACTOR * 3)
@@ -346,9 +346,9 @@ def test_do_some_req_rep_client_timeout():
                     assert event.name == 'sleep'
                     gevent.sleep(TIME_FACTOR * event.args[0])
                     server_hbchan.emit('OK', event.args)
-            assert_raises(zerorpc.LostRemote, _do_with_assert_raises)
+            pytest.raises(zerorpc.LostRemote, _do_with_assert_raises)
         else:
-            with assert_raises(zerorpc.LostRemote):
+            with pytest.raises(zerorpc.LostRemote):
                 for x in range(20):
                     event = server_hbchan.recv()
                     assert event.name == 'sleep'

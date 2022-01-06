@@ -26,7 +26,7 @@ from __future__ import print_function
 from builtins import str
 
 import functools
-import nose.exc
+import pytest
 import random
 import os
 
@@ -52,7 +52,7 @@ def skip(reason):
     def _skip(test):
         @functools.wraps(test)
         def wrap():
-            raise nose.exc.SkipTest(reason)
+            raise pytest.SkipTest(reason)
         return wrap
     return _skip
 

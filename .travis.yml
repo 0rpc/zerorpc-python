@@ -29,4 +29,4 @@ script:
   - if [ $TRAVIS_PYTHON_VERSION != '2.6' ]; then
     flake8 --ignore=E501,E128 zerorpc bin;
     fi
-  - nosetests -v
+  - pytest -v

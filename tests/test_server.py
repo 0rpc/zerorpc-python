@@ -27,7 +27,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from builtins import range
 
-from nose.tools import assert_raises
+import pytest
 import gevent
 import sys
 
@@ -114,9 +114,9 @@ def test_client_server_client_timeout():
     client.connect(endpoint)
 
     if sys.version_info < (2, 7):
-        assert_raises(zerorpc.TimeoutExpired, client.add, 1, 4)
+        pytest.raises(zerorpc.TimeoutExpired, client.add, 1, 4)
     else:
-        with assert_raises(zerorpc.TimeoutExpired):
+        with pytest.raises(zerorpc.TimeoutExpired):
             print(client.add(1, 4))
     client.close()
     srv.close()
@@ -140,9 +140,9 @@ def test_client_server_exception():
     if sys.version_info < (2, 7):
         def _do_with_assert_raises():
             print(client.raise_something(42))
-        assert_raises(zerorpc.RemoteError, _do_with_assert_raises)
+        pytest.raises(zerorpc.RemoteError, _do_with_assert_raises)
     else:
-        with assert_raises(zerorpc.RemoteError):
+        with pytest.raises(zerorpc.RemoteError):
             print(client.raise_something(42))
     assert client.raise_something(list(range(5))) == 4
     client.close()
@@ -167,9 +167,9 @@ def test_client_server_detailed_exception():
     if sys.version_info < (2, 7):
         def _do_with_assert_raises():
             print(client.raise_error())
-        assert_raises(zerorpc.RemoteError, _do_with_assert_raises)
+        pytest.raises(zerorpc.RemoteError, _do_with_assert_raises)
     else:
-        with assert_raises(zerorpc.RemoteError):
+        with pytest.raises(zerorpc.RemoteError):
             print(client.raise_error())
     try:
         client.raise_error()
