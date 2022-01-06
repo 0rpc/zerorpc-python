@@ -55,13 +55,8 @@ def test_client_server_client_timeout_with_async():
 
     async_result = client.add(1, 4, async_=True)
 
-    if sys.version_info < (2, 7):
-        def _do_with_assert_raises():
-            print(async_result.get())
-        pytest.raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
-    else:
-        with pytest.raises(zerorpc.TimeoutExpired):
-            print(async_result.get())
+    with pytest.raises(zerorpc.TimeoutExpired):
+        print(async_result.get())
     client.close()
     srv.close()
 

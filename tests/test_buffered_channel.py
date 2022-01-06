@@ -60,11 +60,8 @@ def test_close_server_bufchan():
     gevent.sleep(TIME_FACTOR * 3)
     print('CLOSE SERVER SOCKET!!!')
     server_bufchan.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, client_bufchan.recv)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            client_bufchan.recv()
+    with pytest.raises(zerorpc.LostRemote):
+        client_bufchan.recv()
     print('CLIENT LOST SERVER :)')
     client_bufchan.close()
     server.close()
@@ -95,11 +92,8 @@ def test_close_client_bufchan():
     gevent.sleep(TIME_FACTOR * 3)
     print('CLOSE CLIENT SOCKET!!!')
     client_bufchan.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, client_bufchan.recv)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            client_bufchan.recv()
+    with pytest.raises(zerorpc.LostRemote):
+        client_bufchan.recv()
     print('SERVER LOST CLIENT :)')
     server_bufchan.close()
     server.close()
@@ -128,11 +122,8 @@ def test_heartbeat_can_open_channel_server_close():
     gevent.sleep(TIME_FACTOR * 3)
     print('CLOSE SERVER SOCKET!!!')
     server_bufchan.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, client_bufchan.recv)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            client_bufchan.recv()
+    with pytest.raises(zerorpc.LostRemote):
+        client_bufchan.recv()
     print('CLIENT LOST SERVER :)')
     client_bufchan.close()
     server.close()
@@ -169,11 +160,8 @@ def test_heartbeat_can_open_channel_client_close():
     print('CLOSE CLIENT SOCKET!!!')
     client_bufchan.close()
     client.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, server_coro.get)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            server_coro.get()
+    with pytest.raises(zerorpc.LostRemote):
+        server_coro.get()
     print('SERVER LOST CLIENT :)')
     server.close()
 
@@ -243,11 +231,8 @@ def test_do_some_req_rep_lost_server():
             assert event.name == 'OK'
             assert list(event.args) == [x + x * x]
         client_bufchan.emit('add', (x, x * x))
-        if sys.version_info < (2, 7):
-            pytest.raises(zerorpc.LostRemote, client_bufchan.recv)
-        else:
-            with pytest.raises(zerorpc.LostRemote):
-                client_bufchan.recv()
+        with pytest.raises(zerorpc.LostRemote):
+            client_bufchan.recv()
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -307,11 +292,8 @@ def test_do_some_req_rep_lost_client():
             assert event.name == 'add'
             server_bufchan.emit('OK', (sum(event.args),))
 
-        if sys.version_info < (2, 7):
-            pytest.raises(zerorpc.LostRemote, server_bufchan.recv)
-        else:
-            with pytest.raises(zerorpc.LostRemote):
-                server_bufchan.recv()
+        with pytest.raises(zerorpc.LostRemote):
+            server_bufchan.recv()
         server_bufchan.close()
 
     coro_pool.spawn(server_do)
@@ -336,21 +318,12 @@ def test_do_some_req_rep_client_timeout():
         client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
         client_bufchan = zerorpc.BufferedChannel(client_hbchan)
 
-        if sys.version_info < (2, 7):
-            def _do_with_assert_raises():
-                for x in range(10):
-                    client_bufchan.emit('sleep', (x,))
-                    event = client_bufchan.recv(timeout=TIME_FACTOR * 3)
-                    assert event.name == 'OK'
-                    assert list(event.args) == [x]
-            pytest.raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
-        else:
-            with pytest.raises(zerorpc.TimeoutExpired):
-                for x in range(10):
-                    client_bufchan.emit('sleep', (x,))
-                    event = client_bufchan.recv(timeout=TIME_FACTOR * 3)
-                    assert event.name == 'OK'
-                    assert list(event.args) == [x]
+        with pytest.raises(zerorpc.TimeoutExpired):
+            for x in range(10):
+                client_bufchan.emit('sleep', (x,))
+                event = client_bufchan.recv(timeout=TIME_FACTOR * 3)
+                assert event.name == 'OK'
+                assert list(event.args) == [x]
         client_bufchan.close()
 
     coro_pool = gevent.pool.Pool()
@@ -362,21 +335,12 @@ def test_do_some_req_rep_client_timeout():
         server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
         server_bufchan = zerorpc.BufferedChannel(server_hbchan)
 
-        if sys.version_info < (2, 7):
-            def _do_with_assert_raises():
-                for x in range(20):
-                    event = server_bufchan.recv()
-                    assert event.name == 'sleep'
-                    gevent.sleep(TIME_FACTOR * event.args[0])
-                    server_bufchan.emit('OK', event.args)
-            pytest.raises(zerorpc.LostRemote, _do_with_assert_raises)
-        else:
-            with pytest.raises(zerorpc.LostRemote):
-                for x in range(20):
-                    event = server_bufchan.recv()
-                    assert event.name == 'sleep'
-                    gevent.sleep(TIME_FACTOR * event.args[0])
-                    server_bufchan.emit('OK', event.args)
+        with pytest.raises(zerorpc.LostRemote):
+            for x in range(20):
+                event = server_bufchan.recv()
+                assert event.name == 'sleep'
+                gevent.sleep(TIME_FACTOR * event.args[0])
+                server_bufchan.emit('OK', event.args)
         server_bufchan.close()
 
 
@@ -418,25 +382,13 @@ def test_congestion_control_server_pushing():
         server_channel = server.channel(event)
         server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
         server_bufchan = zerorpc.BufferedChannel(server_hbchan, inqueue_size=100)
-        if sys.version_info < (2, 7):
-            def _do_with_assert_raises():
-                for x in range(200):
-                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 1
-            pytest.raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
-        else:
-            with pytest.raises(zerorpc.TimeoutExpired):
-                for x in range(200):
-                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 1
+        with pytest.raises(zerorpc.TimeoutExpired):
+            for x in range(200):
+                server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 1
         server_bufchan.emit('coucou', 1)  # block until receiver is ready
-        if sys.version_info < (2, 7):
-            def _do_with_assert_raises():
-                for x in range(2, 200):
-                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 100
-            pytest.raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
-        else:
-            with pytest.raises(zerorpc.TimeoutExpired):
-                for x in range(2, 200):
-                    server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 100
+        with pytest.raises(zerorpc.TimeoutExpired):
+            for x in range(2, 200):
+                server_bufchan.emit('coucou', x, timeout=0)  # will fail when x == 100
         for x in range(read_cnt.value, 200):
             server_bufchan.emit('coucou', x) # block until receiver is ready
         server_bufchan.close()

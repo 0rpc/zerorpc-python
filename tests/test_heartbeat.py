@@ -58,11 +58,8 @@ def test_close_server_hbchan():
     gevent.sleep(TIME_FACTOR * 3)
     print('CLOSE SERVER SOCKET!!!')
     server_hbchan.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, client_hbchan.recv)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            client_hbchan.recv()
+    with pytest.raises(zerorpc.LostRemote):
+        client_hbchan.recv()
     print('CLIENT LOST SERVER :)')
     client_hbchan.close()
     server.close()
@@ -91,11 +88,8 @@ def test_close_client_hbchan():
     gevent.sleep(TIME_FACTOR * 3)
     print('CLOSE CLIENT SOCKET!!!')
     client_hbchan.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, server_hbchan.recv)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            server_hbchan.recv()
+    with pytest.raises(zerorpc.LostRemote):
+        server_hbchan.recv()
     print('SERVER LOST CLIENT :)')
     server_hbchan.close()
     server.close()
@@ -122,11 +116,8 @@ def test_heartbeat_can_open_channel_server_close():
     gevent.sleep(TIME_FACTOR * 3)
     print('CLOSE SERVER SOCKET!!!')
     server_hbchan.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, client_hbchan.recv)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            client_hbchan.recv()
+    with pytest.raises(zerorpc.LostRemote):
+        client_hbchan.recv()
     print('CLIENT LOST SERVER :)')
     client_hbchan.close()
     server.close()
@@ -154,11 +145,8 @@ def test_heartbeat_can_open_channel_client_close():
     print('CLOSE CLIENT SOCKET!!!')
     client_hbchan.close()
     client.close()
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.LostRemote, server_hbchan.recv)
-    else:
-        with pytest.raises(zerorpc.LostRemote):
-            server_hbchan.recv()
+    with pytest.raises(zerorpc.LostRemote):
+        server_hbchan.recv()
     print('SERVER LOST CLIENT :)')
     server_hbchan.close()
     server.close()
@@ -226,11 +214,8 @@ def test_do_some_req_rep_lost_server():
             assert event.name == 'OK'
             assert list(event.args) == [x + x * x]
         client_hbchan.emit('add', (x, x * x))
-        if sys.version_info < (2, 7):
-            pytest.raises(zerorpc.LostRemote, client_hbchan.recv)
-        else:
-            with pytest.raises(zerorpc.LostRemote):
-                client_hbchan.recv()
+        with pytest.raises(zerorpc.LostRemote):
+            client_hbchan.recv()
         client_hbchan.close()
 
     client_task = gevent.spawn(client_do)
@@ -286,11 +271,8 @@ def test_do_some_req_rep_lost_client():
             assert event.name == 'add'
             server_hbchan.emit('OK', (sum(event.args),))
 
-        if sys.version_info < (2, 7):
-            pytest.raises(zerorpc.LostRemote, server_hbchan.recv)
-        else:
-            with pytest.raises(zerorpc.LostRemote):
-                server_hbchan.recv()
+        with pytest.raises(zerorpc.LostRemote):
+            server_hbchan.recv()
         server_hbchan.close()
 
     server_task = gevent.spawn(server_do)
@@ -315,21 +297,12 @@ def test_do_some_req_rep_client_timeout():
         client_channel = client.channel()
         client_hbchan = zerorpc.HeartBeatOnChannel(client_channel, freq=TIME_FACTOR * 2)
 
-        if sys.version_info < (2, 7):
-            def _do_with_assert_raises():
-                for x in range(10):
-                    client_hbchan.emit('sleep', (x,))
-                    event = client_hbchan.recv(timeout=TIME_FACTOR * 3)
-                    assert event.name == 'OK'
-                    assert list(event.args) == [x]
-            pytest.raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
-        else:
-            with pytest.raises(zerorpc.TimeoutExpired):
-                for x in range(10):
-                    client_hbchan.emit('sleep', (x,))
-                    event = client_hbchan.recv(timeout=TIME_FACTOR * 3)
-                    assert event.name == 'OK'
-                    assert list(event.args) == [x]
+        with pytest.raises(zerorpc.TimeoutExpired):
+            for x in range(10):
+                client_hbchan.emit('sleep', (x,))
+                event = client_hbchan.recv(timeout=TIME_FACTOR * 3)
+                assert event.name == 'OK'
+                assert list(event.args) == [x]
         client_hbchan.close()
 
     client_task = gevent.spawn(client_do)
@@ -339,21 +312,12 @@ def test_do_some_req_rep_client_timeout():
         server_channel = server.channel(event)
         server_hbchan = zerorpc.HeartBeatOnChannel(server_channel, freq=TIME_FACTOR * 2)
 
-        if sys.version_info < (2, 7):
-            def _do_with_assert_raises():
-                for x in range(20):
-                    event = server_hbchan.recv()
-                    assert event.name == 'sleep'
-                    gevent.sleep(TIME_FACTOR * event.args[0])
-                    server_hbchan.emit('OK', event.args)
-            pytest.raises(zerorpc.LostRemote, _do_with_assert_raises)
-        else:
-            with pytest.raises(zerorpc.LostRemote):
-                for x in range(20):
-                    event = server_hbchan.recv()
-                    assert event.name == 'sleep'
-                    gevent.sleep(TIME_FACTOR * event.args[0])
-                    server_hbchan.emit('OK', event.args)
+        with pytest.raises(zerorpc.LostRemote):
+            for x in range(20):
+                event = server_hbchan.recv()
+                assert event.name == 'sleep'
+                gevent.sleep(TIME_FACTOR * event.args[0])
+                server_hbchan.emit('OK', event.args)
         server_hbchan.close()
 
     server_task = gevent.spawn(server_do)

@@ -23,8 +23,6 @@
 # SOFTWARE.
 
 
-from __future__ import print_function
-from __future__ import absolute_import
 from builtins import range
 
 import pytest
@@ -113,11 +111,8 @@ def test_client_server_client_timeout():
     client = zerorpc.Client(timeout=TIME_FACTOR * 2)
     client.connect(endpoint)
 
-    if sys.version_info < (2, 7):
-        pytest.raises(zerorpc.TimeoutExpired, client.add, 1, 4)
-    else:
-        with pytest.raises(zerorpc.TimeoutExpired):
-            print(client.add(1, 4))
+    with pytest.raises(zerorpc.TimeoutExpired):
+        print(client.add(1, 4))
     client.close()
     srv.close()
 
@@ -137,13 +132,8 @@ def test_client_server_exception():
     client = zerorpc.Client(timeout=TIME_FACTOR * 2)
     client.connect(endpoint)
 
-    if sys.version_info < (2, 7):
-        def _do_with_assert_raises():
-            print(client.raise_something(42))
-        pytest.raises(zerorpc.RemoteError, _do_with_assert_raises)
-    else:
-        with pytest.raises(zerorpc.RemoteError):
-            print(client.raise_something(42))
+    with pytest.raises(zerorpc.RemoteError):
+        print(client.raise_something(42))
     assert client.raise_something(list(range(5))) == 4
     client.close()
     srv.close()
@@ -164,13 +154,8 @@ def test_client_server_detailed_exception():
     client = zerorpc.Client(timeout=TIME_FACTOR * 2)
     client.connect(endpoint)
 
-    if sys.version_info < (2, 7):
-        def _do_with_assert_raises():
-            print(client.raise_error())
-        pytest.raises(zerorpc.RemoteError, _do_with_assert_raises)
-    else:
-        with pytest.raises(zerorpc.RemoteError):
-            print(client.raise_error())
+    with pytest.raises(zerorpc.RemoteError):
+        print(client.raise_error())
     try:
         client.raise_error()
     except zerorpc.RemoteError as e:
