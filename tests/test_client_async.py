@@ -25,7 +25,7 @@
 
 from __future__ import print_function
 from __future__ import absolute_import
-from nose.tools import assert_raises
+import pytest
 import gevent
 import sys
 
@@ -58,9 +58,9 @@ def test_client_server_client_timeout_with_async():
     if sys.version_info < (2, 7):
         def _do_with_assert_raises():
             print(async_result.get())
-        assert_raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
+        pytest.raises(zerorpc.TimeoutExpired, _do_with_assert_raises)
     else:
-        with assert_raises(zerorpc.TimeoutExpired):
+        with pytest.raises(zerorpc.TimeoutExpired):
             print(async_result.get())
     client.close()
     srv.close()
