@@ -42,13 +42,6 @@ from .context import Context
 from .channel_base import ChannelBase
 
 
-if sys.version_info < (2, 7):
-    def get_pyzmq_frame_buffer(frame):
-        return frame.buffer[:]
-else:
-    def get_pyzmq_frame_buffer(frame):
-        return frame.buffer
-
 # gevent <= 1.1.0.rc5 is missing the Python3 __next__ method.
 if sys.version_info >= (3, 0) and gevent.version_info <= (1, 1, 0, 'rc', '5'):
     setattr(gevent.queue.Channel, '__next__', gevent.queue.Channel.next)
@@ -362,7 +355,7 @@ class Events(ChannelBase):
         else:
             identity = None
             blob = parts[0]
-        event = Event.unpack(get_pyzmq_frame_buffer(blob))
+        event = Event.unpack(blob.buffer)
         event.identity = identity
         if self._debug:
             logger.debug('<-- %s', event)

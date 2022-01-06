@@ -23,8 +23,6 @@
 # SOFTWARE.
 
 
-from __future__ import print_function
-from __future__ import absolute_import
 from builtins import str
 from future.utils import tobytes
 
@@ -100,11 +98,8 @@ def test_resolve_endpoint_events():
             return 'world'
 
     srv = Srv(heartbeat=TIME_FACTOR * 1, context=c)
-    if sys.version_info < (2, 7):
-        pytest.raises(zmq.ZMQError, srv.bind, 'some_service')
-    else:
-        with pytest.raises(zmq.ZMQError):
-            srv.bind('some_service')
+    with pytest.raises(zmq.ZMQError):
+        srv.bind('some_service')
 
     cnt = c.register_middleware(Resolver())
     assert cnt == 1

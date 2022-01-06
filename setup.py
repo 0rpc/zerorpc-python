@@ -24,10 +24,7 @@
 
 import sys
 
-if sys.version_info < (3, 0):
-    execfile('zerorpc/version.py')
-else:
-    exec(compile(open('zerorpc/version.py', encoding='utf8').read(), 'zerorpc/version.py', 'exec'))
+exec(compile(open('zerorpc/version.py', encoding='utf8').read(), 'zerorpc/version.py', 'exec'))
 
 try:
     from setuptools import setup
@@ -36,20 +33,11 @@ except ImportError:
 
 
 requirements = [
+    'gevent>=1.1',
     'msgpack>=0.5.2',
     'pyzmq>=13.1.0',
     'future',
 ]
-
-if sys.version_info < (2, 7):
-    requirements.append('argparse')
-
-if sys.version_info < (2, 7):
-    requirements.append('gevent>=1.1.0,<1.2.0')
-elif sys.version_info < (3, 0):
-    requirements.append('gevent>=1.0')
-else:
-    requirements.append('gevent>=1.1')
 
 with open("README.rst", "r") as fh:
     long_description = fh.read()
@@ -75,8 +63,6 @@ setup(
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
     ),
 )
