@@ -27,6 +27,13 @@
 # We want to act like zmq
 from zmq import *  # noqa
 
+try:
+    # Try to import enums for pyzmq >= 23.0.0
+    from zmq.constants import *  # noqa
+except ImportError:
+    pass
+
+
 # Explicit import to please flake8
 from zmq import ZMQError
 
