@@ -207,7 +207,7 @@ exception is raised), we use the ERR event.
 	- Name of the error (it should be the exception class name, or another
 	  meaningful keyword).
 	- Human representation of the error (preferably in english).
-	- If possible a pretty printed traceback of the call stack when the error occured.
+	- If possible a pretty printed traceback of the call stack when the error occurred.
 
 > A future version of the protocol will probably add a structured version of the
 > traceback, allowing machine-to-machine stack walking and better cross-language
