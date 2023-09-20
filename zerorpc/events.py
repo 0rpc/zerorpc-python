@@ -210,7 +210,7 @@ class Event(object):
 
     @staticmethod
     def unpack(blob):
-        unpacker = msgpack.Unpacker(raw=False)
+        unpacker = msgpack.Unpacker(raw=False, max_buffer_size=1105507304) # 1024**3 
         unpacker.feed(blob)
         unpacked_msg = unpacker.unpack()
 
