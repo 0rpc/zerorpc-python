@@ -1,0 +1,59 @@
+name: publish
+
+on:
+  push:
+    branches: [main]
+    tags: ['*']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up latest supported Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Provision virtual environment and run tests
+        run: pip install -r dev-requirements.txt && nox -s install test
+
+
+  publish:
+    needs: check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # NOTE: fetches all history for all branches and tags
+
+      - name: Set up latest supported Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Install build dependencies
+        run: pip install nox
+
+      - name: Build distribution 📦
+        run: PYTHONWARNINGS=ignore LOCAL_VERSION_SCHEME=true nox -s build
+
+      - name: Publish distribution 📦 to Test PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.test_pypi_password }}
+          skip_existing: true
+          repository_url: https://test.pypi.org/legacy/
+
+      - name: Publish distribution 📦 to PyPI
+        if: startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}
+          skip_existing: true
+
