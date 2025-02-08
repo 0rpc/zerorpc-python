@@ -406,7 +406,7 @@ def fork_task_context(functor, context=None):
               - task1 is created to handle this event this task will be linked
                 to the initial event context. zerorpc.Server does that for you.
               - task1 make use of some zerorpc.Client instances, the initial
-                event context is transfered on every call.
+                event context is transferred on every call.
 
               - task1 spawn a new task2.
               - task2 make use of some zerorpc.Client instances, it's a fresh
@@ -415,7 +415,7 @@ def fork_task_context(functor, context=None):
 
               - task1 spawn a new fork_task_context(task3).
               - task3 make use of some zerorpc.Client instances, the initial
-                event context is transfered on every call.
+                event context is transferred on every call.
 
         A real use case is a distributed tracer. Each time a new event is
         created, a trace_id is injected in it or copied from the current task
