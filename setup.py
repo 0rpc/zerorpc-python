@@ -38,6 +38,7 @@ except ImportError:
 requirements = [
     'msgpack>=0.5.2',
     'pyzmq>=13.1.0',
+    'msgpack-numpy>=0.4.3',
     'future',
 ]
 
