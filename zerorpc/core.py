@@ -78,8 +78,8 @@ class ServerBase(object):
         server_methods = set(k for k in dir(cls) if not k.startswith('_'))
         return dict((k, getattr(methods, k))
                     for k in dir(methods)
-                    if callable(getattr(methods, k)) and
-                    not k.startswith('_') and k not in server_methods
+                    if callable(getattr(methods, k))
+                    and not k.startswith('_') and k not in server_methods
                     )
 
     @staticmethod
@@ -268,8 +268,8 @@ class ClientBase(object):
 
         # In python 3.7, "async" is a reserved keyword, clients should now use
         # "async_": support both for the time being
-        if (kargs.get('async', False) is False and
-            kargs.get('async_', False) is False):
+        if (kargs.get('async', False) is False
+                and kargs.get('async_', False) is False):
             return self._process_response(request_event, bufchan, timeout)
 
         async_result = gevent.event.AsyncResult()

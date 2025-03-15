@@ -232,7 +232,7 @@ class BufferedChannel(ChannelBase):
         self._remote_queue_open_slots -= 1
         try:
             self._channel.emit_event(event)
-        except:
+        except Exception:
             self._remote_queue_open_slots += 1
             raise
 

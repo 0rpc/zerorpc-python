@@ -67,13 +67,13 @@ class SequentialSender(object):
         for i in range(len(parts) - 1):
             try:
                 self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
-            except (gevent.GreenletExit, gevent.Timeout) as e:
+            except (gevent.GreenletExit, gevent.Timeout):
                 if i == 0:
                     raise
                 self._socket.send(parts[i], copy=False, flags=zmq.SNDMORE)
         try:
             self._socket.send(parts[-1], copy=False)
-        except (gevent.GreenletExit, gevent.Timeout) as e:
+        except (gevent.GreenletExit, gevent.Timeout):
             self._socket.send(parts[-1], copy=False)
         if e:
             raise e
@@ -97,7 +97,7 @@ class SequentialReceiver(object):
         while True:
             try:
                 part = self._socket.recv(copy=False)
-            except (gevent.GreenletExit, gevent.Timeout) as e:
+            except (gevent.GreenletExit, gevent.Timeout):
                 if len(parts) == 0:
                     raise
                 part = self._socket.recv(copy=False)
