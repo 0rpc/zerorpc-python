@@ -210,7 +210,10 @@ class Event(object):
 
     @staticmethod
     def unpack(blob):
-        unpacker = msgpack.Unpacker(raw=False)
+        if sys.version_info < (3, 0):
+            unpacker = msgpack.Unpacker()
+        else:
+            unpacker = msgpack.Unpacker(raw=False)
         unpacker.feed(blob)
         unpacked_msg = unpacker.unpack()
 
